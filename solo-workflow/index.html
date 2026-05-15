@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solo Dev Safe-Pull Workflow — nuget-audit</title>
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-bg-alt: #f8f9fa;
+      --color-bg-dark: #1a1a2e;
+      --color-text: #212529;
+      --color-text-muted: #6c757d;
+      --color-accent: #0d6efd;
+      --color-accent-dark: #0a58ca;
+      --color-border: #dee2e6;
+      --color-code-bg: #f1f3f5;
+      --color-success: #198754;
+      --color-warning: #fd7e14;
+      --color-danger: #dc3545;
+      --font-sans: system-ui, -apple-system, sans-serif;
+      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --radius: 6px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); line-height: 1.6; }
+    a { color: var(--color-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { background: var(--color-bg-dark); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    nav .brand { color: #fff; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+    nav .brand span { color: #60a5fa; }
+    nav ul { list-style: none; display: flex; gap: 1.5rem; }
+    nav ul a { color: #cbd5e1; font-size: 0.9rem; }
+    nav ul a:hover { color: #fff; text-decoration: none; }
+    nav .nav-cta { background: var(--color-accent); color: #fff !important; padding: 0.35rem 1rem; border-radius: var(--radius); font-size: 0.85rem; font-weight: 600; }
+
+    .page-header { background: var(--color-bg-dark); color: #fff; padding: 3rem 2rem 2.5rem; }
+    .page-header .breadcrumb { font-size: 0.85rem; color: #64748b; margin-bottom: 0.75rem; }
+    .page-header .breadcrumb a { color: #60a5fa; }
+    .page-header h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem; }
+    .page-header p { color: #94a3b8; max-width: 640px; font-size: 1.05rem; }
+
+    .layout { display: grid; grid-template-columns: 220px 1fr; gap: 0; max-width: 1100px; margin: 0 auto; padding: 2rem; }
+    @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+    .sidebar { position: sticky; top: 1rem; align-self: start; padding-right: 2rem; }
+    .sidebar nav ul { display: block; }
+    .sidebar nav { background: none; padding: 0; height: auto; display: block; }
+    .sidebar-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+    .sidebar ul { list-style: none; }
+    .sidebar ul li { margin-bottom: 0.1rem; }
+    .sidebar ul a { color: var(--color-text-muted); font-size: 0.875rem; display: block; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .sidebar ul a:hover { color: var(--color-accent); background: var(--color-bg-alt); text-decoration: none; }
+
+    .content h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin: 2.5rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--color-border); }
+    .content h2:first-child { border-top: none; margin-top: 0; }
+    .content h3 { font-size: 1.15rem; font-weight: 600; margin: 1.75rem 0 0.5rem; }
+    .content h4 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.4rem; color: var(--color-text-muted); }
+    .content p { margin-bottom: 0.9rem; }
+    .content ul, .content ol { margin: 0.5rem 0 0.9rem 1.5rem; }
+    .content li { margin-bottom: 0.3rem; }
+    code { font-family: var(--font-mono); font-size: 0.875em; background: var(--color-code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+    pre { background: #1e293b; color: #e2e8f0; border-radius: var(--radius); padding: 1.25rem; overflow-x: auto; margin: 0.75rem 0 1.25rem; }
+    pre code { background: none; padding: 0; font-size: 0.85rem; line-height: 1.6; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.75rem 0 1.25rem; }
+    th { background: var(--color-bg-alt); text-align: left; padding: 0.6rem 0.9rem; font-weight: 600; border-bottom: 2px solid var(--color-border); }
+    td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    .callout { border-left: 4px solid var(--color-accent); background: #eff6ff; padding: 0.9rem 1.1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0 1.25rem; }
+    .callout.warning { border-color: var(--color-warning); background: #fff8f0; }
+    .callout.danger { border-color: var(--color-danger); background: #fff5f5; }
+    .callout.success { border-color: var(--color-success); background: #f0fdf4; }
+    .callout p { margin: 0; font-size: 0.9rem; }
+    .callout strong { display: block; margin-bottom: 0.2rem; }
+
+    .setup-card { border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin: 1rem 0; box-shadow: var(--shadow); }
+    .setup-card h4 { margin-top: 0; font-size: 1rem; }
+    .setup-card .setup-badge { display: inline-block; background: var(--color-accent); color: #fff; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; padding: 0.15em 0.5em; border-radius: 3px; margin-bottom: 0.5rem; }
+
+    footer { background: var(--color-bg-dark); color: #64748b; text-align: center; padding: 2rem; font-size: 0.85rem; margin-top: 3rem; }
+    footer p { color: inherit; }
+    footer a { color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="../" class="brand">nuget<span>-audit</span></a>
+  <ul>
+    <li><a href="../zero-trust/">Zero-Trust Workflow</a></li>
+    <li><a href="../solo-workflow/" style="color:#fff">Solo Dev</a></li>
+    <li><a href="../guide/">User Guide</a></li>
+    <li><a href="../dependabot/">Dependabot</a></li>
+    <li><a href="../policy/">Policy Guide</a></li>
+    <li><a href="https://www.nuget.org/packages/nuget-audit" class="nav-cta">Install</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="breadcrumb"><a href="../">nuget-audit</a> / Solo Dev Workflow</div>
+  <h1>Staying Safe When the Team Isn't Using the Audit Tool</h1>
+  <p>A personal workflow for individual developers pulling from a shared Git repo
+  where no team-wide supply chain controls are in place.</p>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-title">On this page</div>
+    <nav>
+      <ul>
+        <li><a href="#core-risk">The core risk</a></li>
+        <li><a href="#setup-auto-restore">One-time: disable auto-restore</a></li>
+        <li><a href="#setup-sentinel">One-time: pre-build safety net</a></li>
+        <li><a href="#first-clone">Workflow 1 — first-time clone</a></li>
+        <li><a href="#subsequent-pulls">Workflow 2 — subsequent pulls</a></li>
+        <li><a href="#reading-output">Reading the audit output</a></li>
+        <li><a href="#vs-git-tools">VS Git tools</a></li>
+        <li><a href="#summary">Summary</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="content">
+
+    <h2 id="core-risk">The core risk</h2>
+    <p>
+      When a teammate commits a package change and you pull it, Visual Studio may
+      <strong>automatically restore</strong> the moment it detects the project file has
+      changed — before you have had a chance to review what is being pulled in. A
+      compromised transitive dependency could be on your machine before you knew it existed.
+    </p>
+    <p>The two dangerous moments:</p>
+    <ol>
+      <li><strong>First-time clone</strong> — you open the solution in VS and it restores everything.</li>
+      <li><strong>Subsequent pull</strong> — VS detects a changed <code>.csproj</code> or
+      <code>Directory.Packages.props</code> and restores in the background while you are
+      still reading the diff.</li>
+    </ol>
+    <p>
+      In both cases the first restore of a newly downloaded package is safe — MSBuild
+      evaluates the project before downloading, so a brand-new package's
+      <code>.targets</code> are never part of that restore's evaluated graph. But once a
+      package is in the local cache, its <code>.targets</code> can execute on any subsequent
+      restore or build. <strong>Build is the more common trigger in practice.</strong> This
+      means there is always a window after the first restore where you can audit before the
+      next action — but only if you know to look.
+    </p>
+
+    <h2 id="setup-auto-restore">One-time setup: disable VS auto-restore</h2>
+    <div class="setup-card">
+      <div class="setup-badge">Do this once</div>
+      <h4>This is the single most important setting.</h4>
+      <p>
+        It prevents VS from restoring automatically when it detects project file changes,
+        giving you control over when restore happens.
+      </p>
+      <ol style="margin-top:0.75rem">
+        <li>In Visual Studio: <strong>Tools → Options → NuGet Package Manager → General</strong></li>
+        <li>Uncheck <strong>"Automatically check for missing packages during build in Visual Studio"</strong></li>
+        <li>Click OK</li>
+      </ol>
+    </div>
+    <div class="callout warning">
+      <strong>What changes with auto-restore off</strong>
+      <p>
+        VS will not restore on open or on project file changes. You become responsible for
+        running <code>dotnet restore</code> manually. Builds will fail if packages are missing
+        — that is intentional. A missing package means something changed and needs your
+        attention first.
+      </p>
+    </div>
+
+    <h2 id="setup-sentinel">One-time setup: the pre-build safety net</h2>
+    <p>
+      Even with auto-restore disabled, it is easy to forget to audit before building.
+      A <code>Directory.Build.targets</code> file at your solution root can automate this —
+      running <code>--check</code> before every build.
+    </p>
+    <p>
+      If the team does not use lock files, the sentinel cannot fire on lock file changes.
+      In that case the pre-build target should run <code>--check</code> unconditionally:
+    </p>
+    <pre><code>&lt;!-- Directory.Build.targets — personal copy, do not commit if team isn't using this --&gt;
+&lt;Target Name="PersonalAuditGate" BeforeTargets="Build"&gt;
+  &lt;Exec Command="nuget-audit audit --check --path &amp;quot;$(SolutionPath)&amp;quot;" /&gt;
+&lt;/Target&gt;</code></pre>
+    <div class="callout">
+      <strong>Keep this file personal</strong>
+      <p>
+        Add <code>Directory.Build.targets</code> to your <code>.gitignore</code> so it stays
+        local to your machine and does not affect teammates' builds. If the team later adopts
+        the full zero-trust workflow, run <code>nuget-audit init</code> to replace this with
+        the lock-file-aware sentinel version — see the
+        <a href="../zero-trust/#vs-enforcement">zero-trust workflow guide</a>.
+      </p>
+    </div>
+
+    <h2 id="first-clone">Workflow 1 — first-time clone</h2>
+    <div class="callout danger">
+      <strong>Never open the solution in VS first.</strong>
+      <p>Clone from the command line, preview and restore there, then open VS.</p>
+    </div>
+
+    <pre><code># 1. Clone via CLI — no restore happens here
+git clone https://github.com/your-org/your-repo.git
+cd your-repo
+
+# 2. Preview what restore will pull in — no download yet
+nuget-audit preview-restore --path .
+
+# 3. Review the output carefully:
+#    - Any Untrusted packages?
+#    - Any recently published packages (within 14 days)?
+#    - Any packages you don't recognize?
+#    If anything looks wrong, stop here and raise it with the team.
+
+# 4. If clean, restore
+dotnet restore
+
+# 5. Audit the restored graph to confirm it matches the preview
+nuget-audit audit --path .
+
+# 6. Now open in VS — packages are already on disk, nothing new will be pulled</code></pre>
+
+    <div class="callout">
+      <strong>Preview accuracy and speed</strong>
+      <p>
+        By default, <code>preview-restore</code> runs an exact <code>dotnet restore</code>
+        into a temp directory — the resolved graph matches what would actually be installed.
+        Use <code>--fast</code> for a quicker approximate result when speed matters more than
+        exact accuracy. Either way, always follow preview with <code>nuget-audit audit</code>
+        after restoring (step 5) to confirm the final graph.
+      </p>
+    </div>
+
+    <h2 id="subsequent-pulls">Workflow 2 — subsequent pulls</h2>
+    <p>
+      Always pull from the CLI with VS closed, or at minimum with auto-restore disabled
+      (step above).
+    </p>
+
+    <pre><code># 1. Pull via CLI (VS closed, or auto-restore disabled)
+git pull
+
+# 2. Check whether any package-related files changed in this pull
+git diff HEAD@{1} -- "*.csproj" "*.props" "packages.lock.json" "Directory.Packages.props"</code></pre>
+
+    <h3>If nothing package-related changed</h3>
+    <p>
+      No action needed. Open VS and build normally. The pre-build sentinel (if configured)
+      will confirm there is nothing to audit.
+    </p>
+
+    <h3>If packages.lock.json changed (team uses lock files)</h3>
+    <p>
+      The resolved graph changed. You know exactly what changed because the lock file diff
+      shows it. Restore against the new lock file, then audit before building:
+    </p>
+    <pre><code>dotnet restore
+nuget-audit audit --path .</code></pre>
+    <p>
+      If the pre-build sentinel is in place, it will run <code>--check</code> before your
+      first build anyway — this is your backup if you forget.
+    </p>
+
+    <h3>If .csproj or Directory.Packages.props changed (no lock files)</h3>
+    <p>
+      You can see which packages changed but not the full transitive impact. For each
+      changed package, run preview first:
+    </p>
+    <pre><code># For each added or version-bumped package identified in the diff:
+nuget-audit preview-update &lt;ChangedPackage&gt; --version &lt;NewVersion&gt; --path .
+
+# If preview looks clean for all changed packages, restore
+dotnet restore --force-evaluate
+
+# Audit after restore to confirm
+nuget-audit audit --path .</code></pre>
+    <p>
+      Add <code>--fast</code> to <code>preview-update</code> for a quicker approximate
+      result. For packages from a private feed, <code>--version</code> is required and
+      credentials must be configured via <code>NuGet.Config</code> or the Azure Artifacts
+      Credential Provider.
+    </p>
+    <p>
+      If multiple packages changed and running preview for each is impractical, skip
+      straight to restore + audit — the window between restore and build still exists
+      and the pre-build sentinel enforces it.
+    </p>
+
+    <h2 id="reading-output">Reading the audit output after a pull</h2>
+    <p>Focus on these flags when auditing after pulling a teammate's changes:</p>
+    <table>
+      <thead>
+        <tr><th>Flag</th><th>What it means</th><th>What to do</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Untrusted</code></td>
+          <td>Package not on your trusted list</td>
+          <td>Look up the owner on nuget.org; check the project URL; add to
+          <code>trustedPackages</code> if legitimate</td>
+        </tr>
+        <tr>
+          <td><code>VersionChanged</code></td>
+          <td>A package you previously trusted has a new version</td>
+          <td>Re-review the package at the new version before accepting</td>
+        </tr>
+        <tr>
+          <td><code>VerifiedUnknownOwner</code></td>
+          <td>Prefix-verified but owner not in your trusted list</td>
+          <td>Check who the owner is and whether you recognize them</td>
+        </tr>
+        <tr>
+          <td>Recently published</td>
+          <td>Any package published within the threshold days</td>
+          <td>Note the package; consider waiting out the detection window before building against it</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <code>PrivateFeed</code> packages (your org's internal feed) are suppressed by default
+      — they are trusted by definition.
+    </p>
+
+    <h2 id="vs-git-tools">What about VS Git tools?</h2>
+    <p>
+      The VS Git tools (Git Changes, Git Repository window) run the same underlying git
+      commands as the CLI. The risk is not the git operation itself — it is what VS does
+      <em>after</em> it detects the changed project files.
+    </p>
+    <p>
+      With auto-restore disabled, VS Git tools are safe to use for pull, fetch, and
+      checkout. The only operation that carries risk is letting VS trigger a restore
+      without your knowledge. With the setting disabled and the pre-build sentinel in
+      place, VS Git tools are fine for day-to-day use.
+    </p>
+
+    <h2 id="summary">Summary</h2>
+    <table>
+      <thead><tr><th>Situation</th><th>Key action</th></tr></thead>
+      <tbody>
+        <tr><td>First-time clone</td><td><code>preview-restore</code> before opening in VS</td></tr>
+        <tr><td>Pull with package changes + lock files</td><td>Restore → audit before building</td></tr>
+        <tr><td>Pull with package changes, no lock files</td><td><code>preview-update</code> per changed package → restore → audit</td></tr>
+        <tr><td>Pull with no package changes</td><td>Nothing extra needed</td></tr>
+        <tr><td>VS auto-restore</td><td>Disable it (Tools → Options → NuGet Package Manager)</td></tr>
+        <tr><td>Forgot to audit</td><td>Pre-build sentinel catches it before the build runs</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout success">
+      <strong>Ready to bring the team along?</strong>
+      <p>
+        The <a href="../zero-trust/">zero-trust team workflow</a> describes how to set up
+        the full policy — lock files, VS pre-build enforcement, CI gates — so that the
+        workflow is enforced automatically rather than relying on individual discipline.
+      </p>
+    </div>
+
+  </div><!-- .content -->
+</div><!-- .layout -->
+
+<footer>
+  <p>Copyright &copy; 2026 James Zuras. &nbsp; &nbsp;
+  <a href="https://www.nuget.org/packages/nuget-audit">NuGet.org</a></p>
+</footer>
+
+</body>
+</html>

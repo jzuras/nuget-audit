@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>nuget-audit — NuGet Supply Chain Security</title>
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-bg-alt: #f8f9fa;
+      --color-bg-dark: #1a1a2e;
+      --color-text: #212529;
+      --color-text-muted: #6c757d;
+      --color-accent: #0d6efd;
+      --color-accent-dark: #0a58ca;
+      --color-border: #dee2e6;
+      --color-code-bg: #f1f3f5;
+      --color-success: #198754;
+      --color-warning: #fd7e14;
+      --color-danger: #dc3545;
+      --font-sans: system-ui, -apple-system, sans-serif;
+      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --radius: 6px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); line-height: 1.6; }
+    a { color: var(--color-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Nav */
+    nav { background: var(--color-bg-dark); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    nav .brand { color: #fff; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+    nav .brand span { color: #60a5fa; }
+    nav ul { list-style: none; display: flex; gap: 1.5rem; }
+    nav ul a { color: #cbd5e1; font-size: 0.9rem; }
+    nav ul a:hover { color: #fff; text-decoration: none; }
+    nav .nav-cta { background: var(--color-accent); color: #fff !important; padding: 0.35rem 1rem; border-radius: var(--radius); font-size: 0.85rem; font-weight: 600; }
+    nav .nav-cta:hover { background: var(--color-accent-dark); }
+
+    /* Hero */
+    .hero { background: var(--color-bg-dark); color: #fff; padding: 5rem 2rem 4rem; text-align: center; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 1.25rem; }
+    .hero h1 em { color: #60a5fa; font-style: normal; }
+    .hero .subtitle { font-size: 1.15rem; color: #94a3b8; max-width: 620px; margin: 0 auto 2rem; }
+    .hero-install { display: inline-flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--radius); padding: 0.65rem 1.25rem; margin-bottom: 2rem; }
+    .hero-install code { font-family: var(--font-mono); font-size: 0.95rem; color: #e2e8f0; background: transparent; }
+    .hero-install .copy-hint { font-size: 0.75rem; color: #94a3b8; }
+    .hero-badges { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    .badge { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 0.8rem; padding: 0.3rem 0.75rem; border-radius: 999px; }
+
+    /* Sections */
+    .section { padding: 4rem 2rem; max-width: 900px; margin: 0 auto; }
+    .section-wide { padding: 4rem 2rem; max-width: 1100px; margin: 0 auto; }
+    .section-alt { background: var(--color-bg-alt); }
+    .section-alt .section, .section-alt .section-wide { background: transparent; }
+    h2 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 1rem; }
+    h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.6rem; margin-top: 1.75rem; }
+    p { margin-bottom: 1rem; color: var(--color-text); }
+    p:last-child { margin-bottom: 0; }
+    .lead { font-size: 1.1rem; color: var(--color-text-muted); }
+
+    /* The gap table */
+    .gap-table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th { background: var(--color-bg-dark); color: #e2e8f0; text-align: left; padding: 0.65rem 1rem; font-weight: 600; }
+    td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--color-bg-alt); }
+    .tag-yes { color: var(--color-success); font-weight: 600; }
+    .tag-no { color: var(--color-danger); }
+    .tag-partial { color: var(--color-warning); font-weight: 600; }
+
+    /* Output demo */
+    .demo-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.5rem 0; }
+    @media (max-width: 640px) { .demo-wrap { grid-template-columns: 1fr; } }
+    .demo-box { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--color-border); }
+    .demo-box-header { padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .demo-box-header.flagged { background: #fff3cd; color: #856404; }
+    .demo-box-header.clean { background: #d1e7dd; color: #0a3622; }
+    pre { margin: 0; padding: 1rem; background: #1e293b; color: #e2e8f0; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.5; overflow-x: auto; }
+    code { font-family: var(--font-mono); font-size: 0.88em; background: var(--color-code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+    pre code { background: none; padding: 0; font-size: inherit; }
+    .trust-untrusted { color: #f87171; }
+    .trust-changed { color: #fbbf24; }
+    .trust-verified { color: #34d399; }
+
+    /* Feature grid */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin: 1.5rem 0; }
+    .feature-card { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
+    .feature-card .icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .feature-card h4 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .feature-card p { font-size: 0.88rem; color: var(--color-text-muted); margin: 0; }
+
+    /* Trust model */
+    .trust-row-ok td:first-child { border-left: 3px solid var(--color-success); }
+    .trust-row-warn td:first-child { border-left: 3px solid var(--color-warning); }
+    .trust-row-bad td:first-child { border-left: 3px solid var(--color-danger); }
+    .trust-badge { display: inline-block; font-size: 0.78rem; font-family: var(--font-mono); padding: 0.15em 0.5em; border-radius: 3px; font-weight: 600; }
+    .trust-badge.verified { background: #d1e7dd; color: #0a3622; }
+    .trust-badge.privatefeed { background: #e2e3e5; color: #383d41; }
+    .trust-badge.trusted { background: #cff4fc; color: #055160; }
+    .trust-badge.unknown { background: #fff3cd; color: #664d03; }
+    .trust-badge.changed { background: #ffe5d0; color: #6e2d00; }
+    .trust-badge.untrusted { background: #f8d7da; color: #58151c; }
+
+    /* CTA */
+    .cta-block { background: var(--color-bg-dark); color: #fff; border-radius: var(--radius); padding: 2.5rem 2rem; text-align: center; margin: 2rem 0; }
+    .cta-block h3 { color: #fff; font-size: 1.4rem; margin-top: 0; }
+    .cta-block p { color: #94a3b8; max-width: 500px; margin: 0 auto 1.5rem; }
+    .btn { display: inline-block; padding: 0.6rem 1.5rem; border-radius: var(--radius); font-weight: 600; font-size: 0.95rem; }
+    .btn-primary { background: var(--color-accent); color: #fff; }
+    .btn-primary:hover { background: var(--color-accent-dark); text-decoration: none; }
+    .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; margin-left: 0.75rem; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.18); text-decoration: none; }
+
+    /* Callout */
+    .callout { border-left: 4px solid var(--color-accent); background: #eff6ff; padding: 1rem 1.25rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.25rem 0; }
+    .callout.warning { border-color: var(--color-warning); background: #fff8f0; }
+    .callout p { margin: 0; font-size: 0.92rem; }
+    .callout strong { display: block; margin-bottom: 0.25rem; }
+
+    /* Footer */
+    footer { background: var(--color-bg-dark); color: #64748b; text-align: center; padding: 2rem; font-size: 0.85rem; }
+    footer p { color: inherit; }
+    footer a { color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">nuget<span>-audit</span></span>
+  <ul>
+    <li><a href="zero-trust/">Zero-Trust Workflow</a></li>
+    <li><a href="solo-workflow/">Solo Dev</a></li>
+    <li><a href="guide/">User Guide</a></li>
+    <li><a href="dependabot/">Dependabot</a></li>
+    <li><a href="policy/">Policy Guide</a></li>
+    <li><a href="https://www.nuget.org/packages/nuget-audit" class="nav-cta">Install</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>One command.<br><em>Every NuGet supply chain risk.</em></h1>
+  <p class="subtitle">
+    The <code style="background:rgba(255,255,255,0.1);color:#e2e8f0">Authors</code> field
+    in every NuGet package is free text. Anyone can claim
+    <code style="background:rgba(255,255,255,0.1);color:#e2e8f0">Authors = "Microsoft"</code>
+    — and neither Visual Studio nor the .NET CLI will warn you.
+    <strong style="color:#e2e8f0">nuget-audit</strong> uses nuget.org's cryptographically
+    backed publisher verification, not self-reported metadata. It is also the enforcement
+    layer for the full zero-trust NuGet workflow — from project setup through CI gate —
+    and verifies that every control is in place.
+  </p>
+  <div class="hero-install">
+    <code>dotnet tool install -g nuget-audit</code>
+    <span class="copy-hint">— requires .NET 8 SDK or later</span>
+  </div>
+  <div class="hero-badges">
+    <span class="badge">Windows · macOS · Linux</span>
+    <span class="badge">.NET global tool</span>
+    <span class="badge">CI/CD ready</span>
+    <span class="badge">VS pre-build integration</span>
+  </div>
+</section>
+
+<!-- The enforcement gap -->
+<div class="section-alt">
+<div class="section-wide">
+  <h2>Why not just use what you already have?</h2>
+  <p class="lead">
+    Package Source Mapping, lock files, Dependabot, and vulnerability scanning are all
+    valuable — but each covers a different slice. None of them surfaces the one signal
+    that matters most: <strong>whether the publisher is actually who they claim to be.</strong>
+  </p>
+  <div class="gap-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>What you might already have</th>
+          <th>Publisher identity</th>
+          <th>Detection window</th>
+          <th>Enforcement gate</th>
+          <th>Setup advisory</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>dotnet list package --vulnerable</code></td>
+          <td class="tag-no">No — CVEs only</td>
+          <td class="tag-no">No</td>
+          <td class="tag-no">No</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td>Package Source Mapping</td>
+          <td class="tag-no">No — feed isolation only</td>
+          <td class="tag-no">No</td>
+          <td class="tag-no">No</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td>NuGet lock files + <code>RestoreLockedMode</code></td>
+          <td class="tag-no">No — graph pinning only</td>
+          <td class="tag-no">No</td>
+          <td class="tag-partial">Partial</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td>Dependabot</td>
+          <td class="tag-no">No</td>
+          <td class="tag-no">Can auto-merge within window</td>
+          <td class="tag-no">No</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td><strong>nuget-audit audit --check</strong></td>
+          <td class="tag-yes">Yes</td>
+          <td class="tag-yes">Yes — flags recent versions</td>
+          <td class="tag-yes">Yes — exit code 1</td>
+          <td class="tag-yes">Yes — warns on missing setup</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="lead" style="margin-top:1rem">
+    <code>nuget-audit audit --check</code> in CI is a single pass/fail gate that covers
+    all of the above — and warns you when any complementary control is not configured.
+  </p>
+</div>
+</div>
+
+<!-- What it looks like -->
+<div class="section">
+  <h2>What it looks like</h2>
+  <p>By default, only packages that need action are shown. A clean project produces no
+  output and exits with code 0.</p>
+
+  <div class="demo-wrap">
+    <div class="demo-box">
+      <div class="demo-box-header flagged">Flagged audit</div>
+      <pre><code>Found 2 package(s) needing review.
+
+Type    PackageId       Version  Owners         Verified  Trust
+------  --------------  -------  -------------  --------  -------
+Direct  Contoso.Http    3.1.0    contoso-oss    No        <span class="trust-untrusted">Untrusted</span>
+Direct  SomeLib         2.0.0    known-owner    Yes       <span class="trust-changed">VersionChanged</span>
+
+Recently published (within 14 days):
+  Contoso.Http 3.1.0  published 3 days ago  [Untrusted]</code></pre>
+    </div>
+    <div class="demo-box">
+      <div class="demo-box-header clean">Clean audit</div>
+      <pre><code>Found 0 package(s) needing review.
+
+No packages match the current filter.
+
+Recently published:
+  No packages published within
+  the last 14 days.
+
+Exit code: 0</code></pre>
+    </div>
+  </div>
+
+  <p>Run <code>nuget-audit audit --all</code> to see every package with its trust status,
+  or <code>nuget-audit audit --check</code> for a counts-only CI gate.</p>
+</div>
+
+<!-- Detection window -->
+<div class="section-alt">
+<div class="section">
+  <h2>The detection window</h2>
+  <p>
+    Most NuGet supply chain attacks are detected within days of a compromised version
+    being published — by the community, security researchers, or automated scanning.
+    This creates a defensible window: <strong>a version in the ecosystem for weeks
+    without incident is meaningfully safer than one published yesterday.</strong>
+  </p>
+  <p>
+    <code>nuget-audit</code> flags any package version published within
+    <code>recentDaysThreshold</code> days (default: 14) regardless of trust status.
+    A verified <code>Microsoft.*</code> package published two days ago carries more
+    risk than one published six months ago — account compromise, insider threat, and
+    build pipeline compromise do not respect the verified flag.
+  </p>
+  <p>
+    The recency check also provides substantial coverage for <strong>ownership transfer
+    attacks</strong> — where a package is sold or transferred to a malicious actor who
+    then publishes a compromised version. That version will be flagged as recently
+    published. The unmitigated residual is a version that ages past the threshold before
+    the community detects it — an attacker must simultaneously achieve both conditions.
+    Pair with NuGet package signing (<code>&lt;trustedSigners&gt;</code> in
+    <code>NuGet.Config</code>) for ownership-transfer detection independent of the
+    recency window.
+  </p>
+
+  <div class="callout warning">
+    <strong>Dependabot and the detection window</strong>
+    <p>Dependabot can auto-merge a dependency PR within hours of a compromised version
+    being published — well inside the detection window. See the
+    <a href="dependabot/">Dependabot integration guide</a> for the mitigation pattern.</p>
+  </div>
+</div>
+</div>
+
+<!-- Trust model -->
+<div class="section-wide">
+  <h2>Trust model</h2>
+  <p>
+    Each package is evaluated against a layered model. The primary signal is nuget.org
+    <strong>prefix reservation</strong> (<code>verified=true</code>) — a cryptographically
+    backed flag that cannot be self-reported by an attacker, unlike the free-text
+    <code>Authors</code> field. You configure which verified owners you trust and which
+    specific package versions you have manually reviewed.
+  </p>
+
+  <div class="gap-table-wrap" style="margin-top:1.25rem">
+    <table>
+      <thead>
+        <tr><th>Condition</th><th>Trust Status</th><th>Action needed?</th></tr>
+      </thead>
+      <tbody>
+        <tr class="trust-row-ok">
+          <td>404 on nuget.org — private or local feed</td>
+          <td><span class="trust-badge privatefeed">PrivateFeed</span></td>
+          <td>No</td>
+        </tr>
+        <tr class="trust-row-ok">
+          <td><code>verified=true</code> + owner in trusted owners</td>
+          <td><span class="trust-badge verified">Verified</span></td>
+          <td>No</td>
+        </tr>
+        <tr class="trust-row-ok">
+          <td>Exact ID+version in trusted packages list</td>
+          <td><span class="trust-badge trusted">TrustedPackage</span></td>
+          <td>No</td>
+        </tr>
+        <tr class="trust-row-warn">
+          <td><code>verified=true</code> + owner <em>not</em> in trusted owners</td>
+          <td><span class="trust-badge unknown">VerifiedUnknownOwner</span></td>
+          <td>Yes — add owner to <code>trustedOwners</code> if you trust them broadly, or pin the version in <code>trustedPackages</code> for per-version review</td>
+        </tr>
+        <tr class="trust-row-warn">
+          <td>ID in trusted packages, but version changed</td>
+          <td><span class="trust-badge changed">VersionChanged</span></td>
+          <td>Yes — urgent, re-review</td>
+        </tr>
+        <tr class="trust-row-bad">
+          <td>Not verified, not in trusted packages</td>
+          <td><span class="trust-badge untrusted">Untrusted</span></td>
+          <td>Yes — review required</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>trustedOwners vs trustedPackages</h3>
+  <p>
+    When you see <strong>VerifiedUnknownOwner</strong>, you have two options:
+  </p>
+  <p>
+    <strong>Add the owner to <code>trustedOwners</code></strong> for publishers you trust
+    across their entire catalog — well-known organizations like Microsoft, AWS, Google,
+    whose packages you use broadly and will track as they update. Future packages from
+    this owner are trusted automatically.
+  </p>
+  <p>
+    <strong>Add the specific version to <code>trustedPackages</code></strong> for
+    everything else. Even for verified publishers, pinning a version means you explicitly
+    review each update before it enters your project. This is the more conservative,
+    zero-trust default — and the version-pinning cost is highest exactly where the
+    scrutiny should be highest: publishers you haven't fully evaluated.
+  </p>
+</div>
+
+<!-- Features -->
+<div class="section-alt">
+<div class="section-wide">
+  <h2>Everything in one pass</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="icon">🔍</div>
+      <h4>Publisher verification</h4>
+      <p>Uses nuget.org prefix reservation — the only signal an attacker cannot
+      self-report. Not the free-text Authors field.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🕐</div>
+      <h4>Detection window</h4>
+      <p>Flags recently published versions regardless of trust status.
+      Configurable threshold, default 14 days.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">⚠️</div>
+      <h4>CVEs &amp; deprecation</h4>
+      <p>Surfaces known vulnerabilities and deprecated packages from nuget.org
+      metadata in the same pass.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🔎</div>
+      <h4>Exec content detection</h4>
+      <p>Flags packages containing MSBuild targets, Roslyn analyzers, or tool
+      executables — the content that runs at build time.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">👁️</div>
+      <h4>Pre-restore preview</h4>
+      <p>Resolve the full transitive graph before anything downloads.
+      Review what will land on disk before it does.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🔒</div>
+      <h4>Setup enforcement</h4>
+      <p>Warns when lock files, <code>RestoreLockedMode</code>, the VS pre-build
+      sentinel, or Package Source Mapping are not configured — and <code>--check</code>
+      exits 1 on any of these conditions.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🚦</div>
+      <h4>CI/CD gate</h4>
+      <p><code>--check</code> returns exit code 1 on any package issue or setup
+      advisory. Clean pass/fail signal for any pipeline or VS pre-build target.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🖥️</div>
+      <h4>VS pre-build enforcement</h4>
+      <p>MSBuild target runs <code>--check</code> automatically before each build
+      when the lock file changes.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Quick start -->
+<div class="section">
+  <h2>Quick start</h2>
+
+  <h3>Install</h3>
+  <pre><code>dotnet tool install -g nuget-audit</code></pre>
+
+  <h3>Audit your solution</h3>
+  <pre><code># Create TrustConfig.json and Directory.Build.targets with defaults
+nuget-audit init --path .
+
+# Run the audit
+nuget-audit audit --path MySolution.slnx
+
+# See the full workflow walkthrough
+nuget-audit guide</code></pre>
+
+  <h3>Add to CI/CD</h3>
+  <pre><code># Gate 1: restore fails if lock file is out of date
+dotnet restore
+
+# Gate 2: audit fails if any packages need review
+nuget-audit audit --check --path .</code></pre>
+
+  <div class="callout" style="margin-top:1.5rem">
+    <strong>New to the zero-trust approach?</strong>
+    <p>
+      The full team workflow — new projects, package updates, cloning, CI/CD,
+      Dependabot, VS pre-build enforcement, and where the policy can break down
+      — is documented in the <a href="zero-trust/">zero-trust workflow guide</a>.
+      For individual developers on teams that haven't adopted the policy, see the
+      <a href="solo-workflow/">solo dev workflow</a>.
+    </p>
+  </div>
+
+  <div class="cta-block" style="margin-top:2rem">
+    <h3>Ready to audit?</h3>
+    <p>Requires .NET 8 SDK or later. Runs on Windows, macOS, and Linux.</p>
+    <a href="https://www.nuget.org/packages/nuget-audit" class="btn btn-primary">Install from NuGet.org</a>
+    <a href="guide/" class="btn btn-secondary">Read the user guide</a>
+  </div>
+</div>
+
+<footer>
+  <p>Copyright &copy; 2026 James Zuras. &nbsp; &nbsp;
+  <a href="https://www.nuget.org/packages/nuget-audit">NuGet.org</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dependabot Integration — nuget-audit</title>
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-bg-alt: #f8f9fa;
+      --color-bg-dark: #1a1a2e;
+      --color-text: #212529;
+      --color-text-muted: #6c757d;
+      --color-accent: #0d6efd;
+      --color-accent-dark: #0a58ca;
+      --color-border: #dee2e6;
+      --color-code-bg: #f1f3f5;
+      --color-success: #198754;
+      --color-warning: #fd7e14;
+      --color-danger: #dc3545;
+      --font-sans: system-ui, -apple-system, sans-serif;
+      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --radius: 6px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); line-height: 1.6; }
+    a { color: var(--color-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { background: var(--color-bg-dark); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    nav .brand { color: #fff; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+    nav .brand span { color: #60a5fa; }
+    nav ul { list-style: none; display: flex; gap: 1.5rem; }
+    nav ul a { color: #cbd5e1; font-size: 0.9rem; }
+    nav ul a:hover { color: #fff; text-decoration: none; }
+    nav .nav-cta { background: var(--color-accent); color: #fff !important; padding: 0.35rem 1rem; border-radius: var(--radius); font-size: 0.85rem; font-weight: 600; }
+
+    .page-header { background: var(--color-bg-dark); color: #fff; padding: 3rem 2rem 2.5rem; }
+    .page-header .breadcrumb { font-size: 0.85rem; color: #64748b; margin-bottom: 0.75rem; }
+    .page-header .breadcrumb a { color: #60a5fa; }
+    .page-header h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem; }
+    .page-header p { color: #94a3b8; max-width: 640px; font-size: 1.05rem; }
+
+    .layout { display: grid; grid-template-columns: 220px 1fr; gap: 0; max-width: 1100px; margin: 0 auto; padding: 2rem; }
+    @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+    .sidebar { position: sticky; top: 1rem; align-self: start; padding-right: 2rem; }
+    .sidebar nav ul { display: block; }
+    .sidebar nav { background: none; padding: 0; height: auto; display: block; }
+    .sidebar-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+    .sidebar ul { list-style: none; }
+    .sidebar ul li { margin-bottom: 0.1rem; }
+    .sidebar ul a { color: var(--color-text-muted); font-size: 0.875rem; display: block; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .sidebar ul a:hover { color: var(--color-accent); background: var(--color-bg-alt); text-decoration: none; }
+
+    .content h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin: 2.5rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--color-border); }
+    .content h2:first-child { border-top: none; margin-top: 0; }
+    .content h3 { font-size: 1.15rem; font-weight: 600; margin: 1.75rem 0 0.5rem; }
+    .content h4 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.4rem; color: var(--color-text-muted); }
+    .content p { margin-bottom: 0.9rem; }
+    .content ul, .content ol { margin: 0.5rem 0 0.9rem 1.5rem; }
+    .content li { margin-bottom: 0.3rem; }
+    code { font-family: var(--font-mono); font-size: 0.875em; background: var(--color-code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+    pre { background: #1e293b; color: #e2e8f0; border-radius: var(--radius); padding: 1.25rem; overflow-x: auto; margin: 0.75rem 0 1.25rem; }
+    pre code { background: none; padding: 0; font-size: 0.85rem; line-height: 1.6; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.75rem 0 1.25rem; }
+    th { background: var(--color-bg-alt); text-align: left; padding: 0.6rem 0.9rem; font-weight: 600; border-bottom: 2px solid var(--color-border); }
+    td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    .callout { border-left: 4px solid var(--color-accent); background: #eff6ff; padding: 0.9rem 1.1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0 1.25rem; }
+    .callout.warning { border-color: var(--color-warning); background: #fff8f0; }
+    .callout.danger { border-color: var(--color-danger); background: #fff5f5; }
+    .callout.success { border-color: var(--color-success); background: #f0fdf4; }
+    .callout p { margin: 0; font-size: 0.9rem; }
+    .callout strong { display: block; margin-bottom: 0.2rem; }
+
+    footer { background: var(--color-bg-dark); color: #64748b; text-align: center; padding: 2rem; font-size: 0.85rem; margin-top: 3rem; }
+    footer p { color: inherit; }
+    footer a { color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="../" class="brand">nuget<span>-audit</span></a>
+  <ul>
+    <li><a href="../zero-trust/">Zero-Trust Workflow</a></li>
+    <li><a href="../solo-workflow/">Solo Dev</a></li>
+    <li><a href="../guide/">User Guide</a></li>
+    <li><a href="../dependabot/" style="color:#fff">Dependabot</a></li>
+    <li><a href="../policy/">Policy Guide</a></li>
+    <li><a href="https://www.nuget.org/packages/nuget-audit" class="nav-cta">Install</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="breadcrumb"><a href="../">nuget-audit</a> / Dependabot Integration</div>
+  <h1>Using Dependabot with the Zero-Trust Workflow</h1>
+  <p>Dependabot can open and auto-merge a dependency update PR within hours of a malicious
+  version being published. Here is how to close that gap.</p>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-title">On this page</div>
+    <nav>
+      <ul>
+        <li><a href="#the-risk">The risk</a></li>
+        <li><a href="#mitigation">The three-part mitigation</a></li>
+        <li><a href="#reviewing-prs">Reviewing a Dependabot PR</a></li>
+        <li><a href="#lock-files">Lock files and Dependabot</a></li>
+        <li><a href="#verify-origin">Verifying PR origin</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="content">
+
+    <h2 id="the-risk">The risk</h2>
+    <p>
+      Dependabot monitors your dependencies and opens PRs when newer versions are available.
+      That is useful, but it introduces a specific supply chain risk: a compromised package
+      version published today could have a Dependabot PR open and auto-merged within hours —
+      well inside the detection window where most attacks are caught by the community.
+    </p>
+    <p>Dependabot also has no access to nuget.org prefix reservation data. It cannot tell you:</p>
+    <ul>
+      <li>Whether the package's <code>verified</code> flag is set</li>
+      <li>Whether the owner on the new version matches the owner you originally trusted</li>
+      <li>Whether the version is newly published and within the detection window</li>
+      <li>What transitive packages the update would add or change</li>
+    </ul>
+    <p>
+      It is reactive by design — it surfaces known CVEs and version availability, but it
+      cannot evaluate trust. <code>nuget-audit</code> fills this gap, but only if Dependabot
+      PRs do not bypass the review step.
+    </p>
+
+    <h2 id="mitigation">The three-part mitigation</h2>
+    <p>
+      These three settings together make Dependabot compatible with the zero-trust workflow.
+      All three are needed — any one alone is insufficient.
+    </p>
+
+    <h3>1. Disable auto-merge for dependency PRs</h3>
+    <p>
+      Auto-merge eliminates the review window entirely. Disable it for any PR that touches
+      package references, or require manual approval before merge regardless of CI status.
+    </p>
+    <p>
+      In GitHub, this is a branch protection rule or a repository-level auto-merge setting.
+      For Dependabot specifically, ensure no <code>automerged_updates</code> rules are set
+      in <code>.github/dependabot.yml</code> for the <code>nuget</code> ecosystem.
+    </p>
+
+    <h3>2. Add a minimum PR age before merge</h3>
+    <p>
+      Require a minimum age of 14 days (matching <code>recentDaysThreshold</code>) before
+      any dependency PR can be merged. This ensures the detection window has passed before
+      the new version enters your project.
+    </p>
+    <p>
+      GitHub does not have a native minimum PR age feature. The recommended pattern is a
+      scheduled CI check that reads the PR creation date and fails until the age threshold
+      is met. This becomes a required status check that blocks the merge button.
+    </p>
+    <div class="callout">
+      <strong>Keep the threshold in sync</strong>
+      <p>If you change <code>recentDaysThreshold</code> in <code>TrustConfig.json</code>,
+      update the minimum PR age rule to match. The two values should always be in sync.</p>
+    </div>
+
+    <h3>3. Run <code>nuget-audit audit --check</code> as a required CI status</h3>
+    <p>
+      Add the audit check to the required status checks for the branch. On a Dependabot PR
+      branch, the audit will flag any newly published package within the detection window
+      in the <em>Recently published</em> section — giving you visibility before merge.
+    </p>
+    <pre><code># In your CI workflow, on every PR:
+dotnet restore
+nuget-audit audit --check --path .</code></pre>
+    <p>
+      A clean pass (exit code 0) is required before the PR can be merged. If the new package
+      version is within the threshold, <code>--check</code> exits 1 and the merge is blocked
+      until the window passes and the audit clears.
+    </p>
+
+    <h2 id="reviewing-prs">Reviewing a Dependabot PR</h2>
+    <p>
+      Before approving a Dependabot PR, run <code>preview-update</code> on the PR branch to
+      see the full transitive graph impact — what packages would be added, changed, or
+      removed, and whether any are untrusted or recently published.
+    </p>
+    <pre><code># Check out the Dependabot branch locally
+git checkout dependabot/nuget/SomePackage-2.0.0
+
+# Preview the transitive graph change
+nuget-audit preview-update SomePackage --version 2.0.0 --path .</code></pre>
+    <p>Review the output for each section:</p>
+    <ul>
+      <li><strong>ADDED</strong> — new transitive packages entering your graph</li>
+      <li><strong>CHANGED</strong> — existing packages being updated by this change</li>
+      <li><strong>REMOVED</strong> — packages dropping out of the graph</li>
+    </ul>
+    <p>
+      Any package in ADDED or CHANGED that is <code>Untrusted</code>,
+      <code>VersionChanged</code>, or within the recently published window requires review
+      before you approve the PR.
+    </p>
+    <div class="callout warning">
+      <strong>Dependabot shows you the direct dependency — not the transitive impact</strong>
+      <p>A version bump on a direct dependency can pull in new or changed transitive packages
+      that Dependabot's PR description does not mention. <code>preview-update</code> shows
+      you the full graph change, not just the one package Dependabot flagged.</p>
+    </div>
+
+    <h2 id="lock-files">Lock files and Dependabot</h2>
+    <p>
+      When <code>RestoreLockedMode=true</code> is in effect, Dependabot must update
+      <code>packages.lock.json</code> as part of the PR — it cannot just bump the version
+      in the project file, because restore would fail against the stale lock. Dependabot
+      handles this automatically: it runs <code>dotnet restore</code> on an ephemeral CI
+      runner and commits the updated lock file alongside the version change.
+    </p>
+    <p>This is the safest integration pattern:</p>
+    <ol>
+      <li>Dependabot detects a new version and creates a branch</li>
+      <li>Updates the version in the project file or <code>Directory.Packages.props</code></li>
+      <li>Runs <code>dotnet restore</code> on the branch, regenerating the lock file</li>
+      <li>Opens the PR with both changes — version bump and updated lock file together</li>
+      <li>CI runs <code>dotnet restore</code> (validates the lock) and
+      <code>nuget-audit audit --check</code></li>
+      <li>You review the lock file diff and the audit output before approving</li>
+    </ol>
+    <p>
+      The lock file diff in the PR is the exact record of what changed in the resolved graph.
+      Review it alongside the <code>preview-update</code> output to confirm they match.
+    </p>
+
+    <h2 id="verify-origin">Verifying PR origin</h2>
+    <p>
+      In 2023, attackers submitted fake PRs that appeared to come from Dependabot. A PR
+      labeled as a Dependabot update is not necessarily one.
+    </p>
+    <p>Always verify:</p>
+    <ul>
+      <li>The PR was opened by the <code>dependabot[bot]</code> account — not a user account
+      with "dependabot" in the name</li>
+      <li>The branch name follows Dependabot's naming convention
+      (<code>dependabot/nuget/PackageName-Version</code>)</li>
+      <li>The lock file diff contains only changes consistent with the stated version bump —
+      no unexpected new packages or unusual version jumps</li>
+    </ul>
+    <p>
+      If anything looks inconsistent, treat the PR as untrusted and investigate before
+      merging.
+    </p>
+
+    <div class="callout success">
+      <strong>Part of the full zero-trust workflow</strong>
+      <p>This pattern is one piece of the broader team policy. See the
+      <a href="../zero-trust/">zero-trust workflow guide</a> for the complete picture —
+      lock files, CI gates, VS pre-build enforcement, and the full package update workflow.</p>
+    </div>
+
+  </div><!-- .content -->
+</div><!-- .layout -->
+
+<footer>
+  <p>Copyright &copy; 2026 James Zuras. &nbsp; &nbsp;
+  <a href="https://www.nuget.org/packages/nuget-audit">NuGet.org</a></p>
+</footer>
+
+</body>
+</html>

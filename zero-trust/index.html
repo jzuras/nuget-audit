@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zero-Trust NuGet Workflow — nuget-audit</title>
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-bg-alt: #f8f9fa;
+      --color-bg-dark: #1a1a2e;
+      --color-text: #212529;
+      --color-text-muted: #6c757d;
+      --color-accent: #0d6efd;
+      --color-accent-dark: #0a58ca;
+      --color-border: #dee2e6;
+      --color-code-bg: #f1f3f5;
+      --color-success: #198754;
+      --color-warning: #fd7e14;
+      --color-danger: #dc3545;
+      --font-sans: system-ui, -apple-system, sans-serif;
+      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --radius: 6px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); line-height: 1.6; }
+    a { color: var(--color-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { background: var(--color-bg-dark); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    nav .brand { color: #fff; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+    nav .brand span { color: #60a5fa; }
+    nav ul { list-style: none; display: flex; gap: 1.5rem; }
+    nav ul a { color: #cbd5e1; font-size: 0.9rem; }
+    nav ul a:hover { color: #fff; text-decoration: none; }
+    nav .nav-cta { background: var(--color-accent); color: #fff !important; padding: 0.35rem 1rem; border-radius: var(--radius); font-size: 0.85rem; font-weight: 600; }
+
+    .page-header { background: var(--color-bg-dark); color: #fff; padding: 3rem 2rem 2.5rem; }
+    .page-header .breadcrumb { font-size: 0.85rem; color: #64748b; margin-bottom: 0.75rem; }
+    .page-header .breadcrumb a { color: #60a5fa; }
+    .page-header h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem; }
+    .page-header p { color: #94a3b8; max-width: 640px; font-size: 1.05rem; }
+
+    .layout { display: grid; grid-template-columns: 220px 1fr; gap: 0; max-width: 1100px; margin: 0 auto; padding: 2rem; }
+    @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+    .sidebar { position: sticky; top: 1rem; align-self: start; padding-right: 2rem; }
+    .sidebar nav ul { display: block; }
+    .sidebar nav { background: none; padding: 0; height: auto; display: block; }
+    .sidebar-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+    .sidebar ul { list-style: none; }
+    .sidebar ul li { margin-bottom: 0.1rem; }
+    .sidebar ul a { color: var(--color-text-muted); font-size: 0.875rem; display: block; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .sidebar ul a:hover { color: var(--color-accent); background: var(--color-bg-alt); text-decoration: none; }
+    .sidebar ul li.section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #adb5bd; padding: 0.75rem 0.5rem 0.15rem; letter-spacing: 0.06em; }
+
+    .content h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin: 2.5rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--color-border); }
+    .content h2:first-child { border-top: none; margin-top: 0; }
+    .content h3 { font-size: 1.15rem; font-weight: 600; margin: 1.75rem 0 0.5rem; }
+    .content h4 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.4rem; color: var(--color-text-muted); }
+    .content p { margin-bottom: 0.9rem; }
+    .content ul, .content ol { margin: 0.5rem 0 0.9rem 1.5rem; }
+    .content li { margin-bottom: 0.3rem; }
+    code { font-family: var(--font-mono); font-size: 0.875em; background: var(--color-code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+    pre { background: #1e293b; color: #e2e8f0; border-radius: var(--radius); padding: 1.25rem; overflow-x: auto; margin: 0.75rem 0 1.25rem; }
+    pre code { background: none; padding: 0; font-size: 0.85rem; line-height: 1.6; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.75rem 0 1.25rem; }
+    th { background: var(--color-bg-alt); text-align: left; padding: 0.6rem 0.9rem; font-weight: 600; border-bottom: 2px solid var(--color-border); }
+    td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    .callout { border-left: 4px solid var(--color-accent); background: #eff6ff; padding: 0.9rem 1.1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0 1.25rem; }
+    .callout.warning { border-color: var(--color-warning); background: #fff8f0; }
+    .callout.danger { border-color: var(--color-danger); background: #fff5f5; }
+    .callout p { margin: 0; font-size: 0.9rem; }
+    .callout strong { display: block; margin-bottom: 0.2rem; }
+    .step-list { counter-reset: steps; list-style: none; margin-left: 0; }
+    .step-list li { counter-increment: steps; padding-left: 2.5rem; position: relative; margin-bottom: 1rem; }
+    .step-list li::before { content: counter(steps); position: absolute; left: 0; top: 0; width: 1.75rem; height: 1.75rem; background: var(--color-accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+
+    footer { background: var(--color-bg-dark); color: #64748b; text-align: center; padding: 2rem; font-size: 0.85rem; margin-top: 3rem; }
+    footer p { color: inherit; }
+    footer a { color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="../" class="brand">nuget<span>-audit</span></a>
+  <ul>
+    <li><a href="../zero-trust/" style="color:#fff">Zero-Trust Workflow</a></li>
+    <li><a href="../solo-workflow/">Solo Dev</a></li>
+    <li><a href="../guide/">User Guide</a></li>
+    <li><a href="../dependabot/">Dependabot</a></li>
+    <li><a href="../policy/">Policy Guide</a></li>
+    <li><a href="https://www.nuget.org/packages/nuget-audit" class="nav-cta">Install</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="breadcrumb"><a href="../">nuget-audit</a> / Zero-Trust Workflow</div>
+  <h1>The Zero-Trust NuGet Workflow</h1>
+  <p>A complete team workflow for .NET supply chain security — new projects,
+  package updates, CI/CD, Visual Studio enforcement, and where the policy can break down.</p>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-title">On this page</div>
+    <nav>
+      <ul>
+        <li><a href="#core-insight">The core insight</a></li>
+        <li><a href="#what-zero-trust-means">What "zero-trust" means</a></li>
+        <li><a href="#detection-window">The detection window</a></li>
+        <li class="section-label">Workflows</li>
+        <li><a href="#new-projects">New projects</a></li>
+        <li><a href="#trust-arrays">Setting up trust</a></li>
+        <li><a href="#adding-packages">Adding &amp; updating packages</a></li>
+        <li><a href="#cloning">Cloning an existing project</a></li>
+        <li><a href="#pulling">Pulling a teammate's change</a></li>
+        <li class="section-label">Enforcement</li>
+        <li><a href="#lock-file">The lock file</a></li>
+        <li><a href="#vs-enforcement">Visual Studio enforcement</a></li>
+        <li><a href="#cicd">CI/CD gates</a></li>
+        <li><a href="#dependabot">Dependabot</a></li>
+        <li class="section-label">Reference</li>
+        <li><a href="#breaks-down">Where this breaks down</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="content">
+
+    <h2 id="core-insight">The core insight</h2>
+    <p>
+      Most supply chain attacks against NuGet packages are detected within days of a
+      compromised version being published — by the community, by security researchers,
+      or by automated scanning. This creates an exploitable window, but also a defensible
+      one: <strong>a version that has been in the ecosystem for weeks without incident is
+      meaningfully safer than one published yesterday.</strong>
+    </p>
+    <p>
+      This does not mean old packages are safe. It means that recently published versions
+      — including new versions of packages you already trust — deserve additional scrutiny
+      before they land in your project.
+    </p>
+
+    <h2 id="what-zero-trust-means">What "zero-trust" means here</h2>
+    <p>In this context, zero-trust does not mean trusting nothing. It means:</p>
+    <ul>
+      <li><strong>No package version enters your project without being reviewed first</strong>,
+      regardless of how trusted the publisher is.</li>
+      <li><strong>Automation is not a substitute for a review gate</strong> — auto-update
+      tools and IDE package managers are convenient but bypass the review window.</li>
+      <li><strong>The team follows the same process consistently</strong> — one developer
+      using the VS Package Manager to add a package breaks the chain for the whole project.</li>
+    </ul>
+    <p>
+      The tool enforces none of this directly. It provides the visibility. The policy is a
+      team commitment, reinforced by the lock file and CI gate.
+    </p>
+
+    <h2 id="detection-window">The detection window</h2>
+    <p>Supply chain attacks on NuGet packages follow a consistent pattern:</p>
+    <ol>
+      <li>An attacker publishes a compromised version — through a hijacked account,
+      a typosquatted package ID, or a legitimate-looking new package.</li>
+      <li>The version propagates into projects via restore, Dependabot, or template updates.</li>
+      <li>The attack is detected — typically within days, sometimes within hours.</li>
+    </ol>
+    <p>
+      The implication: <strong>a deliberate delay between a version being published and
+      it being allowed into your project captures most of this window at low cost.</strong>
+      A 14-day threshold (the tool default) covers the large majority of detected attacks.
+      A 30-day threshold covers nearly all of them, at the cost of slower dependency updates.
+    </p>
+    <p>
+      This threshold applies to all packages regardless of trust status. A verified
+      <code>Microsoft.*</code> package published two days ago carries more risk than one
+      published six months ago. Account compromise, insider threat, and build pipeline
+      compromise do not respect the verified flag.
+    </p>
+
+    <h2 id="new-projects">New projects</h2>
+
+    <h3>Stable release SDK templates</h3>
+    <p>
+      <code>dotnet new</code> with a stable release SDK produces a project whose packages
+      fall into two categories that were both pinned at SDK ship time, weeks or months before
+      you create the project. They are outside the detection window by definition — a stable
+      SDK release goes through extensive vetting, and the packages it references have been
+      in the ecosystem long enough that any compromise would have been detected.
+    </p>
+    <p>
+      For most teams this means no pre-restore review is needed for SDK templates — audit
+      immediately after the automatic restore instead.
+    </p>
+    <p>
+      If your organisation requires full coverage before any package reaches the machine,
+      note that even first-party Microsoft packages can pull in transitive dependencies
+      owned by private individuals rather than organisations. The audit will surface these,
+      but by then they are already in your NuGet cache. To review the graph first, suppress
+      the automatic restore and run <code>preview-restore</code> before allowing anything
+      to download:
+    </p>
+
+    <pre><code># Optional: review the full graph before any packages reach the machine
+dotnet new blazor --no-restore
+nuget-audit preview-restore --path .
+# Review output — check for transitives owned by private individuals or unknown publishers.
+# If satisfied, proceed with restore. If not, remove the project and reconsider your template choice.
+dotnet restore</code></pre>
+
+    <pre><code># Standard path:
+
+# 1. Create the project — restores automatically, which is fine for most teams
+dotnet new blazor
+
+# 2. Initialize trust config and audit the restored graph
+nuget-audit init --path .
+nuget-audit audit --path .
+
+# 3. For each flagged package: review and add to TrustConfig.json, then re-run to confirm
+nuget-audit trust-owner &lt;owner&gt; --path .        # verified publishers you trust broadly
+nuget-audit trust-package &lt;id&gt; &lt;ver&gt; --path .  # everything else
+nuget-audit audit --path .
+
+# 4. Lock the graph
+#    Add RestoreLockedMode=true to Directory.Build.props:
+#    &lt;Project&gt;
+#      &lt;PropertyGroup&gt;
+#        &lt;RestoreLockedMode&gt;true&lt;/RestoreLockedMode&gt;
+#      &lt;/PropertyGroup&gt;
+#    &lt;/Project&gt;
+dotnet restore --force-evaluate
+
+# 5. Add .nuget-audit-ok to .gitignore (machine-local sentinel created by Directory.Build.targets)
+
+# 6. Commit everything
+git add packages.lock.json Directory.Build.props Directory.Build.targets .gitignore TrustConfig.json
+git commit -m "Lock NuGet graph and add audit enforcement"</code></pre>
+
+    <h3>Third-party installed templates</h3>
+    <p>
+      Third-party templates (installed via <code>dotnet new install</code>) also restore
+      automatically during <code>dotnet new</code>. By running <code>dotnet new install</code>
+      you have already implicitly trusted the template author. The audit's role here is not
+      to validate that decision; it is to establish <code>TrustConfig.json</code> entries
+      for the packages the template introduced. Expect more flags on first audit — packages
+      from publishers not in the default trusted owners list.
+    </p>
+
+    <h2 id="trust-arrays">Setting up trust</h2>
+    <p>When the audit flags a package, you have two options in <code>TrustConfig.json</code>:</p>
+
+    <h3>Add the owner to trustedOwners</h3>
+    <p>
+      Trusts all current and future packages from that nuget.org account, regardless of
+      version. Appropriate for publishers you have high confidence in across their entire
+      catalog: well-known organizations, publishers whose packages you use broadly and
+      intend to track as they update.
+    </p>
+    <pre><code>nuget-audit trust-owner opentelemetry --path .</code></pre>
+
+    <h3>Add to trustedPackages</h3>
+    <p>
+      Trusts only that package at that exact version. Any version change re-flags for
+      review. This is the more conservative, zero-trust default — even if you trust the
+      publisher, pinning a version means you explicitly review each update before it
+      enters your project. The version-pinning cost is highest exactly where scrutiny
+      should be highest: unverified publishers.
+    </p>
+    <pre><code>nuget-audit trust-package SomePackage 2.0.0 --path .</code></pre>
+
+    <p>
+      Use <code>nuget-audit audit --package-list</code> to generate formatted copy-paste
+      entries for all flagged packages at once.
+    </p>
+
+    <h2 id="adding-packages">Adding and updating packages</h2>
+    <p>
+      With <code>RestoreLockedMode=true</code> in place, <code>dotnet restore</code> fails
+      if the lock file is out of date — requiring a deliberate
+      <code>dotnet restore --force-evaluate</code>. That deliberate act is the entry point
+      for this workflow.
+    </p>
+
+    <div class="callout danger">
+      <strong>Do not use the VS NuGet Package Manager for this workflow.</strong>
+      <p>
+        VS Package Manager restores immediately on package selection, bypassing the
+        preview step. Edit <code>.csproj</code> or <code>Directory.Packages.props</code>
+        by hand, then run <code>dotnet restore --force-evaluate</code> manually.
+      </p>
+    </div>
+
+    <pre><code># 1. Preview before restore — runs dotnet restore into a temp dir; nothing in your real cache
+nuget-audit preview-update SomePackage --version 2.0.0 --path .
+
+# 2. Review the output carefully:
+#    - Unexpected new packages from unknown publishers?
+#    - VersionChanged on a package you didn't intend to update?
+#    - Recently published flag on a package from an unfamiliar owner?
+#    If anything raises concern, stop here.
+
+# 3. Edit .csproj or Directory.Packages.props by hand
+
+# 4. Restore, forcing the lock file to be re-evaluated
+dotnet restore --force-evaluate
+
+# 5. Audit to confirm the restored graph matches the preview
+nuget-audit audit --path .
+
+# 6. Update TrustConfig.json for newly flagged packages, re-run to confirm clean
+
+# 7. Commit the updated lock file alongside the package reference change
+git add packages.lock.json
+git commit -m "Update SomePackage to 2.0.0"</code></pre>
+
+    <div class="callout">
+      <strong>Preview accuracy</strong>
+      <p>
+        By default, <code>preview-update</code> runs an exact <code>dotnet restore</code>
+        into a temp directory — the resolved graph matches what would actually be installed.
+        Step 5 (<code>nuget-audit audit</code>) is still the confirmation gate; preview is
+        for early warning before lock file changes are committed.
+        Use <code>--fast</code> for a quicker approximate result if speed matters more than
+        exact accuracy.
+      </p>
+    </div>
+
+    <h2 id="cloning">Cloning an existing project</h2>
+
+    <h3>Repo has a lock file</h3>
+    <p>
+      The lock file constrains restore to exactly the versions that were audited when it
+      was committed. Clone and open normally — the restore cannot silently pull in
+      different versions. Run <code>nuget-audit audit</code> after cloning to verify the
+      current state before building.
+    </p>
+
+    <h3>Repo has no lock file</h3>
+    <p>
+      Clone with the git CLI and do not open in VS yet — opening in VS triggers an
+      automatic restore, closing the pre-restore review window. The same applies any
+      time you edit package references: run <code>preview-restore</code> before
+      <code>dotnet restore</code> to see the full graph first.
+    </p>
+
+    <pre><code># 1. Preview explicit packages and their transitives before anything restores
+nuget-audit preview-restore --path .
+
+# 2. Review output — untrusted packages, recently published flag, unrecognised owners
+#    If anything raises concern, do not proceed.
+
+# 3. Restore
+dotnet restore
+
+# 4. Run the full audit to confirm the complete graph
+nuget-audit audit --path .
+
+# 5. Update TrustConfig.json, re-run to confirm clean
+
+# 6. Lock the graph and set up VS enforcement (see above)</code></pre>
+
+    <h2 id="pulling">Pulling a teammate's package change</h2>
+    <p>
+      When a teammate adds or updates a package following this workflow, they commit three
+      things: the updated package reference, the updated <code>packages.lock.json</code>,
+      and any <code>TrustConfig.json</code> changes. When you pull:
+    </p>
+    <ol>
+      <li><strong>Restore runs automatically</strong> (VS on solution open, or
+      <code>dotnet restore</code> on CLI). With <code>RestoreLockedMode=true</code> and
+      the updated lock file, this restore is constrained to exactly the versions the
+      teammate resolved. No unexpected packages can land.</li>
+      <li><strong>The sentinel goes stale.</strong> The pulled
+      <code>packages.lock.json</code> has a newer timestamp than your local
+      <code>.nuget-audit-ok</code>. The MSBuild target detects this and runs
+      <code>--check</code> before the next build.</li>
+      <li><strong>If the teammate followed the workflow</strong> — <code>TrustConfig.json</code>
+      is updated, <code>--check</code> passes, build proceeds.</li>
+      <li><strong>If the teammate did not update <code>TrustConfig.json</code></strong> —
+      <code>--check</code> fails and the build is blocked. CI Gate 2 also fails. The build
+      stays blocked until <code>TrustConfig.json</code> is updated.</li>
+    </ol>
+    <p>
+      <strong>The one gap:</strong> there is no pre-restore review window on your local
+      machine — packages download before the audit runs at build time. This is mitigated
+      by the lock file: what downloads is constrained to exactly the locked versions. The
+      recently published flag in the <code>--check</code> output will surface any package
+      within the detection window, giving you the opportunity to raise a concern before
+      the code is built.
+    </p>
+
+    <h2 id="lock-file">The lock file and RestoreLockedMode</h2>
+    <p>
+      With <code>RestoreLockedMode=true</code> committed to <code>Directory.Build.props</code>,
+      any restore that would change the resolved graph fails rather than silently succeeding:
+    </p>
+    <pre><code>error NU1004: The lock file is out of date. To update the lock file run the
+following command: dotnet restore --force-evaluate</code></pre>
+    <p>
+      This means editing a <code>.csproj</code> or <code>Directory.Packages.props</code>
+      and running <code>dotnet restore</code> is not enough — the deliberate
+      <code>--force-evaluate</code> flag is required. The lock does not prevent package
+      changes; it prevents unintentional or unreviewed ones.
+    </p>
+    <p>
+      The lock file is project state and belongs in source control. Every team member and
+      every CI/CD run works from the same frozen graph.
+    </p>
+    <p>
+      <code>nuget-audit</code> warns if it detects a <code>packages.lock.json</code>
+      without <code>RestoreLockedMode=true</code> set — setup is self-checking.
+    </p>
+
+    <h2 id="vs-enforcement">Visual Studio pre-build enforcement</h2>
+    <p>
+      Without this, VS may trigger a build immediately after restore — closing the window
+      before anyone acts. A pre-build MSBuild target closes this gap automatically.
+    </p>
+    <p>
+      <code>nuget-audit init</code> creates <code>Directory.Build.targets</code> at the
+      solution root. If you skipped <code>init</code> or need to recreate it, run:
+    </p>
+    <pre><code>nuget-audit init --path .</code></pre>
+    <p>
+      The target runs <code>nuget-audit audit --check</code> before each build whenever
+      the lock file has changed, using a sentinel file (<code>.nuget-audit-ok</code>) to
+      skip builds where the lock file is unchanged. Add <code>.nuget-audit-ok</code> to
+      <code>.gitignore</code> — it is machine-local state. CI does not use the sentinel;
+      it always audits unconditionally.
+    </p>
+    <p>
+      <code>nuget-audit</code> warns — and <code>--check</code> exits 1 — if
+      <code>RestoreLockedMode=true</code> is set but this target is not present at the
+      solution root, so incomplete setup does not go unnoticed.
+    </p>
+    <h4>Multi-project solutions</h4>
+    <p>
+      <code>Directory.Build.targets</code> evaluates per project. Each project has its own
+      <code>packages.lock.json</code>; the sentinel file lives at the solution root. The
+      first project whose lock file is newer than the sentinel triggers one audit for the
+      whole solution and updates the sentinel. Subsequent projects in the same build skip it.
+    </p>
+    <h4>Prerequisites</h4>
+    <ul>
+      <li><code>RestoreLockedMode=true</code> in <code>Directory.Build.props</code></li>
+      <li><code>nuget-audit</code> installed globally on each developer machine</li>
+    </ul>
+
+    <h2 id="cicd">CI/CD gates</h2>
+    <p>Two independent gates together enforce the full workflow:</p>
+    <table>
+      <thead><tr><th>Gate</th><th>What it catches</th></tr></thead>
+      <tbody>
+        <tr><td><code>dotnet restore</code> with <code>RestoreLockedMode=true</code></td>
+        <td>Package reference edited without updating the lock file</td></tr>
+        <tr><td><code>nuget-audit audit --check</code></td>
+        <td>Packages needing review, deprecated packages, known vulnerabilities, and setup advisory conditions (missing lock file, RestoreLockedMode, pre-build target, or Package Source Mapping)</td></tr>
+      </tbody>
+    </table>
+    <pre><code># In your CI pipeline:
+dotnet restore                         # fails with NU1004 if lock file is out of date
+nuget-audit audit --check --path .    # fails with exit 1 if any packages need review</code></pre>
+
+    <table style="margin-top:1rem">
+      <thead><tr><th>Scenario</th><th>Gate 1</th><th>Gate 2</th></tr></thead>
+      <tbody>
+        <tr><td>Package added/updated following the workflow</td><td>Passes</td><td>Passes</td></tr>
+        <tr><td>Package added/updated, lock file not committed</td><td>Fails</td><td>Not reached</td></tr>
+        <tr><td>Package added/updated, TrustConfig.json not updated</td><td>Passes</td><td>Fails</td></tr>
+        <tr><td>No package changes</td><td>Passes</td><td>Passes — quiet</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="dependabot">Dependabot and automated updates</h2>
+    <p>
+      Dependabot PRs can be merged — or auto-merged — within hours of a compromised version
+      being published, bypassing the detection window entirely. See the
+      <a href="../dependabot/">Dependabot integration guide</a> for the full mitigation
+      pattern, PR review workflow, and fake PR detection.
+    </p>
+
+    <h2 id="breaks-down">Where this policy breaks down</h2>
+    <p>Understanding the gaps is part of the policy:</p>
+    <table>
+      <thead><tr><th>Scenario</th><th>Gap</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>VS NuGet Package Manager</td>
+          <td>Restore happens before any preview</td>
+          <td>Team policy: use CLI only for package operations; pre-build sentinel catches it before the next build</td>
+        </tr>
+        <tr>
+          <td>VS auto-restore on solution open</td>
+          <td>Triggered by <code>.csproj</code> changes from git pull</td>
+          <td>Pre-build sentinel runs audit before build; CI catches it post-restore</td>
+        </tr>
+        <tr>
+          <td>Git pull with teammate's package change</td>
+          <td>No pre-restore review window locally</td>
+          <td>Lock file constrains restore to locked versions; sentinel triggers audit before next build; recently published flag surfaces packages within the detection window</td>
+        </tr>
+        <tr>
+          <td>Preview accuracy</td>
+          <td>Preview resolves transitives via the NuGet API and may not exactly match what <code>dotnet restore</code> selects</td>
+          <td>Always follow preview with a full audit after restoring to confirm the graph</td>
+        </tr>
+        <tr>
+          <td>Preview or nightly SDK</td>
+          <td>Package versions may be within the detection window with less vetting than a stable release</td>
+          <td>Not handled — treat the resulting project as an unvetted dependency graph and audit manually, or accept the additional risk</td>
+        </tr>
+        <tr>
+          <td>Private-feed packages in preview</td>
+          <td>Supported when credentials are available via NuGet.Config or Azure Artifacts Credential Provider; <code>--version</code> required</td>
+          <td>Configure NuGet.Config credentials or install the Azure Artifacts Credential Provider</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div><!-- .content -->
+</div><!-- .layout -->
+
+<footer>
+  <p>Copyright &copy; 2026 James Zuras. &nbsp; &nbsp;
+  <a href="https://www.nuget.org/packages/nuget-audit">NuGet.org</a></p>
+</footer>
+
+</body>
+</html>

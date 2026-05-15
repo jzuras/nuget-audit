@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Guide — nuget-audit</title>
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-bg-alt: #f8f9fa;
+      --color-bg-dark: #1a1a2e;
+      --color-text: #212529;
+      --color-text-muted: #6c757d;
+      --color-accent: #0d6efd;
+      --color-accent-dark: #0a58ca;
+      --color-border: #dee2e6;
+      --color-code-bg: #f1f3f5;
+      --color-success: #198754;
+      --color-warning: #fd7e14;
+      --color-danger: #dc3545;
+      --font-sans: system-ui, -apple-system, sans-serif;
+      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --radius: 6px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); line-height: 1.6; }
+    a { color: var(--color-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { background: var(--color-bg-dark); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    nav .brand { color: #fff; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+    nav .brand span { color: #60a5fa; }
+    nav ul { list-style: none; display: flex; gap: 1.5rem; }
+    nav ul a { color: #cbd5e1; font-size: 0.9rem; }
+    nav ul a:hover { color: #fff; text-decoration: none; }
+    nav .nav-cta { background: var(--color-accent); color: #fff !important; padding: 0.35rem 1rem; border-radius: var(--radius); font-size: 0.85rem; font-weight: 600; }
+
+    .page-header { background: var(--color-bg-dark); color: #fff; padding: 3rem 2rem 2.5rem; }
+    .page-header .breadcrumb { font-size: 0.85rem; color: #64748b; margin-bottom: 0.75rem; }
+    .page-header .breadcrumb a { color: #60a5fa; }
+    .page-header h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem; }
+    .page-header p { color: #94a3b8; max-width: 640px; font-size: 1.05rem; }
+
+    .layout { display: grid; grid-template-columns: 220px 1fr; gap: 0; max-width: 1100px; margin: 0 auto; padding: 2rem; }
+    @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+    .sidebar { position: sticky; top: 1rem; align-self: start; padding-right: 2rem; }
+    .sidebar nav ul { display: block; }
+    .sidebar nav { background: none; padding: 0; height: auto; display: block; }
+    .sidebar-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+    .sidebar ul { list-style: none; }
+    .sidebar ul li { margin-bottom: 0.1rem; }
+    .sidebar ul a { color: var(--color-text-muted); font-size: 0.875rem; display: block; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .sidebar ul a:hover { color: var(--color-accent); background: var(--color-bg-alt); text-decoration: none; }
+    .sidebar ul li.section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #adb5bd; padding: 0.75rem 0.5rem 0.15rem; letter-spacing: 0.06em; }
+
+    .content h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin: 2.5rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--color-border); }
+    .content h2:first-child { border-top: none; margin-top: 0; }
+    .content h3 { font-size: 1.15rem; font-weight: 600; margin: 1.75rem 0 0.5rem; }
+    .content h4 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.4rem; color: var(--color-text-muted); }
+    .content p { margin-bottom: 0.9rem; }
+    .content ul, .content ol { margin: 0.5rem 0 0.9rem 1.5rem; }
+    .content li { margin-bottom: 0.3rem; }
+    code { font-family: var(--font-mono); font-size: 0.875em; background: var(--color-code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+    pre { background: #1e293b; color: #e2e8f0; border-radius: var(--radius); padding: 1.25rem; overflow-x: auto; margin: 0.75rem 0 1.25rem; }
+    pre code { background: none; padding: 0; font-size: 0.85rem; line-height: 1.6; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.75rem 0 1.25rem; }
+    th { background: var(--color-bg-alt); text-align: left; padding: 0.6rem 0.9rem; font-weight: 600; border-bottom: 2px solid var(--color-border); }
+    td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    .callout { border-left: 4px solid var(--color-accent); background: #eff6ff; padding: 0.9rem 1.1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0 1.25rem; }
+    .callout.warning { border-color: var(--color-warning); background: #fff8f0; }
+    .callout.danger { border-color: var(--color-danger); background: #fff5f5; }
+    .callout p { margin: 0; font-size: 0.9rem; }
+    .callout strong { display: block; margin-bottom: 0.2rem; }
+
+    footer { background: var(--color-bg-dark); color: #64748b; text-align: center; padding: 2rem; font-size: 0.85rem; margin-top: 3rem; }
+    footer a { color: #94a3b8; }
+    footer p { color: inherit; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="../" class="brand">nuget<span>-audit</span></a>
+  <ul>
+    <li><a href="../zero-trust/">Zero-Trust Workflow</a></li>
+    <li><a href="../solo-workflow/">Solo Dev</a></li>
+    <li><a href="../guide/" style="color:#fff">User Guide</a></li>
+    <li><a href="../dependabot/">Dependabot</a></li>
+    <li><a href="../policy/">Policy Guide</a></li>
+    <li><a href="https://www.nuget.org/packages/nuget-audit" class="nav-cta">Install</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="breadcrumb"><a href="../">nuget-audit</a> / User Guide</div>
+  <h1>User Guide</h1>
+  <p>Complete command reference, output field descriptions, preview modes,
+  example output, and package policy enforcement use cases.</p>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-title">On this page</div>
+    <nav>
+      <ul>
+        <li class="section-label">Commands</li>
+        <li><a href="#audit">audit</a></li>
+        <li><a href="#preview-update">preview-update</a></li>
+        <li><a href="#preview-restore">preview-restore</a></li>
+        <li><a href="#init">init</a></li>
+        <li><a href="#trust-owner">trust-owner</a></li>
+        <li><a href="#trust-package">trust-package</a></li>
+        <li><a href="#guide-cmd">guide</a></li>
+        <li><a href="#explain-cmd">explain</a></li>
+        <li class="section-label">Output</li>
+        <li><a href="#output-fields">Output fields</a></li>
+        <li><a href="#example-output">Example output</a></li>
+        <li><a href="#package-list">--package-list output</a></li>
+        <li class="section-label">Setup</li>
+        <li><a href="#building-trust">Building trust lists</a></li>
+        <li class="section-label">Use cases</li>
+        <li><a href="#policy-enforcement">Policy enforcement</a></li>
+        <li><a href="#compliance-export">Compliance export</a></li>
+        <li class="section-label">Reference</li>
+        <li><a href="#trustconfig">TrustConfig.json reference</a></li>
+        <li><a href="#limitations">Known limitations</a></li>
+        <li><a href="#related">Related tools</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="content">
+
+    <h2 id="audit">nuget-audit audit</h2>
+    <p>Run a NuGet package security audit.</p>
+    <pre><code>nuget-audit audit --path &lt;path&gt; [options]</code></pre>
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--path</code></td><td><code>.</code></td><td>Path to <code>.csproj</code>, <code>.sln</code>, <code>.slnx</code>, or directory. Auto-discovers <code>.slnx</code> → <code>.sln</code> → <code>.csproj</code> when given a directory.</td></tr>
+        <tr><td><code>--all</code></td><td>—</td><td>Show all packages regardless of trust status, including Verified, TrustedPackage, and PrivateFeed.</td></tr>
+        <tr><td><code>--verbose</code></td><td>—</td><td>Disable per-owner transitive condensing and show all recently-published entries. Independent of <code>--all</code>; combine as needed.</td></tr>
+        <tr><td><code>--package-list</code></td><td>—</td><td>Output packages as formatted copy-paste entries for <code>TrustConfig.json</code>, grouped by trust category.</td></tr>
+        <tr><td><code>--include-existing</code></td><td>—</td><td>With <code>--package-list</code>: replace the "needs review" list with a full inventory of all packages grouped by trust status. Use for a complete dependency footprint view.</td></tr>
+        <tr><td><code>--check</code></td><td>—</td><td>Counts only — packages needing review, deprecated, vulnerable. Also reports setup advisory conditions (missing lock file, RestoreLockedMode, pre-build target, or Package Source Mapping). Exits with code 1 if any counts are non-zero or any advisories are present. Use in CI/CD pipelines and VS pre-build targets.</td></tr>
+        <tr><td><code>--format</code></td><td><code>table</code></td><td>Output format: <code>table</code>, <code>csv</code>, or <code>json</code>.</td></tr>
+        <tr><td><code>--output</code></td><td>—</td><td>Write output to a file. Requires <code>--format csv</code> or <code>--format json</code>. For plain-text table output, use shell redirection instead.</td></tr>
+        <tr><td><code>--trust-config</code></td><td>CWD</td><td>Explicit path to <code>TrustConfig.json</code> or its containing directory.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>--check output</h3>
+    <pre><code>Packages needing trust review: 2
+Deprecated packages:           0
+Packages with vulnerabilities: 1
+
+Security advisory: No packages.lock.json found — lock file enforcement is missing.
+
+Run nuget-audit audit for full details.</code></pre>
+    <p>Exits with code 0 when all counts are zero and no advisory conditions are present.
+    Exits with code 1 if any count is non-zero or if any of the following advisory conditions
+    are detected: missing <code>packages.lock.json</code>, <code>RestoreLockedMode</code> not set,
+    no <code>Directory.Build.targets</code> with a <code>nuget-audit</code> invocation, or
+    Package Source Mapping not configured.</p>
+
+    <h2 id="preview-update">nuget-audit preview-update</h2>
+    <p>
+      Preview transitive graph changes before adding or updating a package. By default,
+      runs an exact <code>dotnet restore</code> into a temp directory so the resolved graph
+      matches what would actually be installed — nothing lands in your real NuGet cache.
+    </p>
+    <pre><code>nuget-audit preview-update &lt;package-id&gt; [--version &lt;ver&gt;] --path &lt;path&gt;</code></pre>
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>&lt;package-id&gt;</code></td><td>required</td><td>Package ID to add or update.</td></tr>
+        <tr><td><code>--version</code></td><td>latest</td><td>Target version. Omit to resolve to the latest available on nuget.org. Required for private-feed packages.</td></tr>
+        <tr><td><code>--path</code></td><td><code>.</code></td><td>Path to solution, project, or directory.</td></tr>
+        <tr><td><code>--trust-config</code></td><td>CWD</td><td>Path to <code>TrustConfig.json</code>.</td></tr>
+        <tr><td><code>--fast</code></td><td>off</td><td>Use approximate BFS resolver instead of <code>dotnet restore</code>. Faster, but results may not match what actually gets installed. Not recommended for security-critical decisions.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Output shows <strong>ADDED</strong>, <strong>CHANGED</strong>, and
+      <strong>REMOVED</strong> sections relative to the current graph. Each new or
+      changed package is evaluated against the same trust model as the main audit,
+      including the recently published check.
+    </p>
+
+    <h3>Private-feed packages</h3>
+    <p>
+      Private-feed packages fall back to the approximate BFS resolver (exact restore is not
+      supported for private feeds). A warning is shown in the output.
+      <code>--version</code> is required for private-feed packages — the latest version
+      cannot be auto-resolved without querying nuget.org.
+    </p>
+
+    <h3>Stale lock file fallback</h3>
+    <p>
+      When <code>RestoreLockedMode=true</code> is in effect and the lock file is out of
+      date, <code>dotnet list package</code> will fail. <code>preview-update</code> detects
+      this and falls back to reading <code>packages.lock.json</code> directly so you can
+      preview the change before running <code>dotnet restore --force-evaluate</code>.
+    </p>
+
+    <h2 id="preview-restore">nuget-audit preview-restore</h2>
+    <p>
+      Resolve the full transitive package graph by running <code>dotnet restore</code> into
+      a temp packages directory. Use before the first restore on a newly cloned project, or
+      any time you have edited package references and want to see the full graph before
+      running the real restore. Package files land in the temp directory (deleted after the
+      preview); the real <code>obj/</code> directory is never touched.
+    </p>
+    <pre><code>nuget-audit preview-restore --path &lt;path&gt;</code></pre>
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--path</code></td><td><code>.</code></td><td>Path to solution, project, or directory.</td></tr>
+        <tr><td><code>--trust-config</code></td><td>CWD</td><td>Path to <code>TrustConfig.json</code>.</td></tr>
+        <tr><td><code>--fast</code></td><td>off</td><td>Use approximate BFS resolver instead of <code>dotnet restore</code>. Requires <code>--framework</code> for TFM selection. Not recommended for security-critical decisions.</td></tr>
+        <tr><td><code>--framework</code></td><td>auto-detected</td><td>TFM for dependency resolution — only used with <code>--fast</code>.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Output is a single ADDED list of every package that would land on disk. Private-feed
+      packages appear as <code>PrivateFeed</code> with a warning — their transitive
+      dependencies cannot be resolved via nuget.org.
+    </p>
+    <div class="callout warning">
+      <strong>Clone with the git CLI only.</strong>
+      <p>
+        Visual Studio and some other tools restore automatically on clone or solution open,
+        bypassing the pre-restore review window — the narrow gap between cloning and the
+        first restore during which you can inspect the full package graph before anything
+        is downloaded. The same window applies any time you edit package references before
+        running <code>dotnet restore</code>.
+      </p>
+    </div>
+
+    <h3>Preview mode decision table</h3>
+    <table>
+      <thead><tr><th>Situation</th><th>Command</th></tr></thead>
+      <tbody>
+        <tr><td>Before the first restore (newly cloned)</td><td><code>preview-restore</code></td></tr>
+        <tr><td>After editing package references</td><td><code>preview-restore</code></td></tr>
+        <tr><td>Adding a new package</td><td><code>preview-update &lt;id&gt;</code></td></tr>
+        <tr><td>Updating an existing package</td><td><code>preview-update &lt;id&gt; --version &lt;ver&gt;</code></td></tr>
+        <tr><td>Reviewing what is currently restored</td><td><code>audit</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>Preview accuracy</strong>
+      <p>
+        By default both preview commands run an exact <code>dotnet restore</code> so the
+        resolved graph matches what would actually be installed. Use <code>--fast</code>
+        to switch to the approximate BFS resolver (faster, but may not match
+        <code>dotnet restore</code>). Always follow any preview with a full
+        <code>nuget-audit audit</code> after restoring.
+      </p>
+    </div>
+
+    <h2 id="init">nuget-audit init</h2>
+    <p>Create <code>TrustConfig.json</code> and <code>Directory.Build.targets</code> to set up a project for the zero-trust workflow.</p>
+    <pre><code>nuget-audit init [--path &lt;dir&gt;] [--force]</code></pre>
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--path</code></td><td><code>.</code></td><td>Directory in which to create the files. Accepts a directory, <code>.sln</code>/<code>.slnx</code> file, or explicit <code>.json</code> path — the containing directory is used in all cases.</td></tr>
+        <tr><td><code>--force</code></td><td>—</td><td>Overwrite existing files. Without <code>--force</code>, existing files are skipped silently.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <code>TrustConfig.json</code> is created with the default trusted owners (<code>Microsoft</code>, <code>dotnetfoundation</code>, <code>aspnet</code>) and a placeholder entry in <code>trustedPackages</code>.
+      <code>Directory.Build.targets</code> adds a pre-build MSBuild target that runs <code>nuget-audit audit --check</code> automatically before each Visual Studio build whenever the lock file has changed.
+      Add <code>.nuget-audit-ok</code> to <code>.gitignore</code> — it is a machine-local sentinel file created by the target.
+    </p>
+    <p>Running <code>init</code> again on a project that already has one file creates the missing file without touching the existing one.</p>
+
+    <h2 id="trust-owner">nuget-audit trust-owner</h2>
+    <p>Add a nuget.org account name to the <code>trustedOwners</code> list.</p>
+    <pre><code>nuget-audit trust-owner &lt;owner&gt; [--path &lt;dir&gt;] [--trust-config &lt;path&gt;]</code></pre>
+    <p>
+      Use the exact account name shown on the package's nuget.org page under "Owners" —
+      not the display name. If the owner is already in the list, exits with no change.
+    </p>
+
+    <h2 id="trust-package">nuget-audit trust-package</h2>
+    <p>Add or update a package/version entry in the <code>trustedPackages</code> list.</p>
+    <pre><code>nuget-audit trust-package &lt;id&gt; &lt;version&gt; [--path &lt;dir&gt;] [--trust-config &lt;path&gt;]</code></pre>
+    <p>
+      If the package ID already exists with a different version (<code>VersionChanged</code>
+      scenario), the entry is updated in place. If the exact ID+version is already trusted,
+      exits with no change.
+    </p>
+
+    <h2 id="guide-cmd">nuget-audit guide</h2>
+    <p>Show a concise workflow walkthrough in the terminal for new and ongoing use.</p>
+    <pre><code>nuget-audit guide</code></pre>
+
+    <h2 id="explain-cmd">nuget-audit explain</h2>
+    <p>Show an in-depth explanation of a security concept, with context for the zero-trust workflow. Advisory messages reference the relevant topic directly — e.g. a missing lock file advisory says <code>Run nuget-audit explain lock-files for setup steps</code>.</p>
+    <pre><code>nuget-audit explain &lt;topic&gt;</code></pre>
+    <table>
+      <thead><tr><th>Topic</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>lock-files</code></td><td>Lock file enforcement and <code>RestoreLockedMode</code> — why deterministic restores are foundational to the zero-trust workflow, with setup steps</td></tr>
+        <tr><td><code>psm</code></td><td>Package Source Mapping and dependency confusion — how PSM prevents NuGet from resolving packages from unintended feeds</td></tr>
+        <tr><td><code>exec-content</code></td><td>Executable content in NuGet packages — why MSBuild targets and Roslyn analyzers expand the trust surface beyond the package library itself</td></tr>
+      </tbody>
+    </table>
+    <p>Omit the topic to list all available topics: <code>nuget-audit explain</code></p>
+
+    <h2 id="output-fields">Output fields</h2>
+    <p>The default <code>table</code> format shows these fields. <code>csv</code> and <code>json</code> output includes additional fields — see below.</p>
+    <table>
+      <thead><tr><th>Field</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Type</strong></td><td><code>Direct</code> or <code>Trans</code> (transitive). JSON field name: <code>dependencyType</code>.</td></tr>
+        <tr><td><strong>PackageId</strong></td><td>Package name. JSON field name: <code>packageId</code>.</td></tr>
+        <tr><td><strong>Version</strong></td><td>Resolved version.</td></tr>
+        <tr><td><strong>Owners</strong></td><td>nuget.org account name(s). In table output, truncated as <code>FirstOwner +N</code> when there are multiple owners. CSV returns all owners as a comma-separated string; JSON returns them as an array. See also <strong>Authors</strong> below — these are different fields.</td></tr>
+        <tr><td><strong>Verified</strong></td><td><code>Yes</code> = nuget.org prefix reserved; <code>No</code> = unverified; <code>N/A</code> = private feed. JSON: boolean or null.</td></tr>
+        <tr><td><strong>Trust</strong></td><td>Trust status — see <a href="../#trust-model">trust model</a>. Table output uses abbreviated display labels: <code>Approved</code> (TrustedPackage), <code>UnknownOwner</code> (VerifiedUnknownOwner), <code>!VerChg!</code> (VersionChanged). CSV and JSON return the full status name. JSON field name: <code>trustStatus</code>.</td></tr>
+        <tr><td><strong>Depr</strong></td><td>Deprecated on nuget.org. JSON field name: <code>isDeprecated</code>.</td></tr>
+        <tr><td><strong>Vuln</strong></td><td>Has known vulnerabilities. Use <code>dotnet list package --vulnerable</code> for severity levels and advisory URLs. JSON field name: <code>hasVulnerabilities</code>.</td></tr>
+        <tr><td><strong>Exec</strong></td><td>Executable content found in local NuGet cache: <code>MSBld</code> (MSBuild <code>.props</code>/<code>.targets</code>), <code>Alyzr</code> (Roslyn analyzer), <code>Tools</code> (executables in <code>tools/</code>). <code>-</code> = in cache, confirmed clean. <code>?</code> = not in cache, could not be inspected. Column omitted in preview mode and when no displayed package has exec data. JSON field name: <code>executableContent</code> (string array, or <code>null</code> in preview mode meaning not yet inspected; empty array means inspected and clean). CSV field name: <code>ExecutableContent</code> (pipe-separated string, <code>-</code> = clean, <code>?</code> = not inspected). Run <code>nuget-audit explain exec-content</code> for context on why this matters.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>CSV and JSON additional fields</h3>
+    <p>CSV and JSON output include additional package metadata not shown in table format:</p>
+    <table>
+      <thead><tr><th>Field</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>Authors</code></td><td>Author names as declared in the package manifest. <strong>This is self-reported by the publisher</strong> and is distinct from <strong>Owners</strong>, which is the verified nuget.org account. An attacker can set Authors to any value — only Owners is authoritative for trust decisions.</td></tr>
+        <tr><td><code>LicenseExpression</code></td><td>SPDX license expression (e.g. <code>MIT</code>, <code>Apache-2.0</code>). Empty for older packages that predate the SPDX standard.</td></tr>
+        <tr><td><code>LicenseUrl</code></td><td>License URL. Populated for older packages that use a URL instead of an SPDX expression.</td></tr>
+        <tr><td><code>Published</code></td><td>Publication date in ISO 8601 format (UTC). Useful alongside the <code>recentDaysThreshold</code> flag to understand exactly when a package was released.</td></tr>
+        <tr><td><code>ProjectUrl</code></td><td>Package project or repository URL as declared by the publisher.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="example-output">Example output</h2>
+    <pre><code>Filtering to show only packages needing review...
+Found 2 package(s) needing review.
+
+Type    PackageId                Version  Owners         Verified  Trust          Depr  Vuln  Exec
+------  -----------------------  -------  -------------  --------  -------------  ----  ----  ----
+Direct  FakeExcel.Core           3.1.0    fake-author1   No        Untrusted      No    No    MSBld, Alyzr
+Trans   FakeSpreadsheet.Format   1.0.5    fake-author2   No        Untrusted      No    No    -
+
+=== Packages needing review with executable content ===
+  FakeExcel.Core 3.1.0  [Untrusted]  MSBld, Alyzr
+
+For transitive packages needing review, trace the dependency chain:
+  dotnet nuget why ".\MySolution.sln" FakeSpreadsheet.Format
+
+Recently published (within 14 days — higher supply chain risk):
+  FakeExcel.Core 3.1.0  published 2026-03-29 (4 days ago)  [Untrusted]</code></pre>
+
+    <h2 id="package-list">--package-list output</h2>
+    <p>
+      Run <code>nuget-audit audit --package-list</code> to generate formatted copy-paste
+      entries for <code>TrustConfig.json</code>. Output is grouped into sections (only
+      sections with matches are shown):
+    </p>
+    <pre><code># --- Prefix-verified packages (unknown owner) ---
+# These packages have nuget.org prefix reservation but their owner is not in
+# trustedOwners. Pin by version below, or add the owner to trustedOwners (see end).
+
+{ "id": "SomePackage", "version": "2.0.0" },
+
+# --- Unverified packages ---
+# These packages have no nuget.org prefix reservation. Review carefully before trusting.
+
+{ "id": "FakeExcel.Core", "version": "3.1.0" },
+
+# --- trustedOwners alternative (prefix-verified packages only) ---
+# Instead of pinning by version, add these publishers to trustedOwners to trust
+# all current and future versions.
+
+"SomeOrg",</code></pre>
+
+    <p>
+      Add <code>--include-existing</code> to replace the "needs review" list with a full
+      inventory of all packages sorted and color-coded by trust status — useful for auditing
+      your complete dependency footprint or verifying that previously approved packages are
+      still accounted for.
+    </p>
+
+    <h2 id="building-trust">Building your trust lists</h2>
+
+    <h3>Initial setup on an existing project</h3>
+    <ol>
+      <li>Run <code>nuget-audit audit --path .</code> to see what needs review.</li>
+      <li>For each flagged package, check the <code>Owners</code> column and the
+      package's nuget.org page <code>ProjectUrl</code>.</li>
+      <li>Run <code>nuget-audit audit --package-list</code> to generate copy-paste
+      entries for all flagged packages at once.</li>
+      <li>Decide for each: add the owner to <code>trustedOwners</code> (trusted broadly,
+      all versions) or add the specific ID+version to <code>trustedPackages</code>
+      (reviewed manually, re-review on version change).</li>
+      <li>Re-run the audit to confirm quiet output.</li>
+    </ol>
+
+    <h3>When a package version changes</h3>
+    <p>
+      The <code>VersionChanged</code> status flags a package in <code>trustedPackages</code>
+      whose version has changed since you last reviewed it. This is intentional — a new
+      version is new code. Review the changelog and update your entry:
+    </p>
+    <pre><code>nuget-audit trust-package SomePackage 3.0.0 --path .</code></pre>
+    <p>This updates the existing entry in place.</p>
+
+    <h2 id="policy-enforcement">Package policy enforcement</h2>
+    <p>
+      Beyond security, <code>nuget-audit</code> enforces organizational package policies.
+      The audit + CI gate pattern works for any rule expressible as a trust status.
+    </p>
+
+    <h3>Enforcing a package migration</h3>
+    <p>
+      Example: your organization is migrating away from a third-party logging package to
+      <code>Microsoft.Extensions.Logging</code>.
+    </p>
+    <ol>
+      <li>Remove the package or its owner from <code>TrustConfig.json</code> — do not
+      add it to <code>trustedPackages</code> for the new version.</li>
+      <li>The CI gate (<code>nuget-audit audit --check</code>) now fails on any project
+      still referencing it.</li>
+      <li>Developers see which projects need migration. Use <code>dotnet nuget why</code>
+      to trace transitive references.</li>
+      <li>Projects must migrate before the CI gate passes, enforcing the policy without
+      manual policing.</li>
+    </ol>
+
+    <h3>Other policy enforcement examples</h3>
+    <ul>
+      <li>Block deprecated packages, even from trusted publishers — the <code>Depr</code>
+      column surfaces these; <code>--check</code> fails if any are present.</li>
+      <li>Prevent specific third-party packages for compliance reasons — omit them from
+      trust lists to keep them flagged.</li>
+      <li>Control architectural decisions — prefer <code>System.*</code> over third-party
+      alternatives by only adding the preferred packages to <code>trustedOwners</code>.</li>
+      <li>Enforce use of an internal fork over the public package — the public package
+      stays <code>Untrusted</code>; the internal one comes from a private feed
+      (<code>PrivateFeed</code>, trusted by default).</li>
+    </ul>
+
+    <h2 id="compliance-export">Compliance export</h2>
+    <p>Export audit results for compliance records or external tooling:</p>
+    <pre><code># CSV export
+nuget-audit audit --format csv --output "audit-2026-01-05.csv" --path .
+
+# JSON export
+nuget-audit audit --format json --output "audit-2026-01-05.json" --path .</code></pre>
+    <p>
+      CSV and JSON output include all packages regardless of trust status, with all fields
+      including the full owners list. Use with <code>--all</code> to ensure no packages
+      are filtered before export.
+    </p>
+
+    <h2 id="trustconfig">TrustConfig.json reference</h2>
+    <pre><code>{
+  "trustedOwners": [
+    "Microsoft",
+    "dotnetfoundation",
+    "aspnet"
+  ],
+  "trustedPackages": [
+    { "id": "SomePackage", "version": "2.0.0" }
+  ],
+  "recentDaysThreshold": 14
+}</code></pre>
+    <table>
+      <thead><tr><th>Field</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>trustedOwners</code></td>
+          <td>nuget.org account names whose prefix-verified packages are trusted at any version. Use the exact account name from the package's nuget.org "Owners" field — not the display name. Add your organization's nuget.org accounts here.</td>
+        </tr>
+        <tr>
+          <td><code>trustedPackages</code></td>
+          <td>Packages manually reviewed and pinned to a specific version. A version change triggers <code>VersionChanged</code> status. Required for unverified publishers; optional for verified publishers where you want per-version review.</td>
+        </tr>
+        <tr>
+          <td><code>recentDaysThreshold</code></td>
+          <td>Versions published within this many days are flagged as higher supply chain risk regardless of trust status. Default: 14. Adjust to your organization's risk tolerance — 14 days covers most attacks; 30 days covers nearly all. In audit output, a <em>Recently published</em> section lists any packages within the window; changing this value widens or narrows that section.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="limitations">Known limitations</h2>
+    <p>This tool audits <strong>package metadata</strong>. It cannot inspect package code or runtime behavior.</p>
+    <table>
+      <thead><tr><th>Threat</th><th>Covered?</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Unknown package from unknown publisher</td><td>✅ Yes</td><td>—</td></tr>
+        <tr><td>Package impersonating a trusted author name</td><td>✅ Yes</td><td><code>verified</code> + trusted owners catches this</td></tr>
+        <tr><td>Unverified package at an unexpected version</td><td>✅ Yes</td><td><code>trustedPackages</code> exact ID+version match</td></tr>
+        <tr><td>Known CVE in any package</td><td>✅ Yes</td><td><code>Vuln</code> column; use <code>dotnet list package --vulnerable</code> for severity and advisory URLs</td></tr>
+        <tr><td>Packages introduced before any audit</td><td>⚠️ Partial</td><td>Use <code>preview-restore</code> before the first restore; VS and some templates restore automatically</td></tr>
+        <tr><td>Changed transitive pulled in by restore</td><td>⚠️ Partial</td><td><code>preview-update</code> before <code>--force-evaluate</code>; lock files prevent silent changes</td></tr>
+        <tr><td>Compromised account publishing a new version</td><td>⚠️ Partial</td><td>Recently published section flags versions within threshold</td></tr>
+        <tr><td>Ownership transfer followed by malicious release</td><td>⚠️ Partial</td><td>Covered by recency check when the malicious version is published within the threshold window. The unmitigated residual is a version that has aged past the threshold and has not yet been flagged as malicious by the community — the two conditions an attacker must simultaneously achieve. Pair with NuGet package signing (<code>&lt;trustedSigners&gt;</code>) for ownership-transfer detection independent of the recency window — effective only if the original publisher was using author signatures, which many do not.</td></tr>
+        <tr><td>Exec content in packages</td><td>⚠️ Post-restore only</td><td><code>Exec</code> column flags presence; not available in preview mode — run the full audit immediately after restore, before the next build</td></tr>
+        <tr><td>Initial version already malicious</td><td>❌ No</td><td>Out of scope for any automated tool — mitigate by checking download counts, project activity, and community reputation before adding any new dependency</td></tr>
+      </tbody>
+    </table>
+
+    <h3>What dotnet restore can execute</h3>
+    <p>
+      <code>dotnet restore</code> does not run arbitrary package code, but can run MSBuild
+      targets hooked into the <code>Restore</code> target by packages already in the
+      evaluated graph. A newly downloaded package cannot affect the same restore that
+      fetched it — but its targets can run on the next restore or build.
+    </p>
+    <p>
+      This is why the recommended workflow is: preview → restore → audit immediately,
+      before the next build. Build is the more common execution trigger in practice.
+    </p>
+
+    <h2 id="related">Related tools</h2>
+    <p>Pair <code>nuget-audit</code> with:</p>
+    <ul>
+      <li><strong>NuGet lock files</strong> (<code>packages.lock.json</code> + <code>RestoreLockedMode=true</code>) — pins the resolved graph; <code>dotnet restore</code> cannot silently pull in different versions between runs. Run <code>nuget-audit explain lock-files</code> for setup steps.</li>
+      <li><strong>Package Source Mapping</strong> — locks packages to specific feeds, preventing dependency confusion attacks. Run <code>nuget-audit explain psm</code> for details.</li>
+      <li><strong>Central Package Management</strong> — centralizes version declarations in <code>Directory.Packages.props</code>; version changes are visible in one place</li>
+      <li><strong>NuGet package signing</strong> (<code>&lt;trustedSigners&gt;</code>) — cryptographic publisher verification; signatures break if a new owner signs with a different key</li>
+      <li><strong><code>dotnet list package --vulnerable</code></strong> — severity levels and advisory URLs for known CVEs</li>
+      <li><strong><code>dotnet nuget why</code></strong> — traces dependency chains for transitive packages</li>
+    </ul>
+
+  </div><!-- .content -->
+</div><!-- .layout -->
+
+<footer>
+  <p>Copyright &copy; 2026 James Zuras. &nbsp; &nbsp;
+  <a href="https://www.nuget.org/packages/nuget-audit">NuGet.org</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Policy Enforcement Guide — nuget-audit</title>
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-bg-alt: #f8f9fa;
+      --color-bg-dark: #1a1a2e;
+      --color-text: #212529;
+      --color-text-muted: #6c757d;
+      --color-accent: #0d6efd;
+      --color-accent-dark: #0a58ca;
+      --color-border: #dee2e6;
+      --color-code-bg: #f1f3f5;
+      --color-success: #198754;
+      --color-warning: #fd7e14;
+      --color-danger: #dc3545;
+      --font-sans: system-ui, -apple-system, sans-serif;
+      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --radius: 6px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); line-height: 1.6; }
+    a { color: var(--color-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { background: var(--color-bg-dark); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    nav .brand { color: #fff; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+    nav .brand span { color: #60a5fa; }
+    nav ul { list-style: none; display: flex; gap: 1.5rem; }
+    nav ul a { color: #cbd5e1; font-size: 0.9rem; }
+    nav ul a:hover { color: #fff; text-decoration: none; }
+    nav .nav-cta { background: var(--color-accent); color: #fff !important; padding: 0.35rem 1rem; border-radius: var(--radius); font-size: 0.85rem; font-weight: 600; }
+
+    .page-header { background: var(--color-bg-dark); color: #fff; padding: 3rem 2rem 2.5rem; }
+    .page-header .breadcrumb { font-size: 0.85rem; color: #64748b; margin-bottom: 0.75rem; }
+    .page-header .breadcrumb a { color: #60a5fa; }
+    .page-header h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem; }
+    .page-header p { color: #94a3b8; max-width: 640px; font-size: 1.05rem; }
+
+    .layout { display: grid; grid-template-columns: 220px 1fr; gap: 0; max-width: 1100px; margin: 0 auto; padding: 2rem; }
+    @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+    .sidebar { position: sticky; top: 1rem; align-self: start; padding-right: 2rem; }
+    .sidebar nav ul { display: block; }
+    .sidebar nav { background: none; padding: 0; height: auto; display: block; }
+    .sidebar-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+    .sidebar ul { list-style: none; }
+    .sidebar ul li { margin-bottom: 0.1rem; }
+    .sidebar ul a { color: var(--color-text-muted); font-size: 0.875rem; display: block; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .sidebar ul a:hover { color: var(--color-accent); background: var(--color-bg-alt); text-decoration: none; }
+
+    .content h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin: 2.5rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--color-border); }
+    .content h2:first-child { border-top: none; margin-top: 0; }
+    .content h3 { font-size: 1.15rem; font-weight: 600; margin: 1.75rem 0 0.5rem; }
+    .content h4 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.4rem; color: var(--color-text-muted); }
+    .content p { margin-bottom: 0.9rem; }
+    .content ul, .content ol { margin: 0.5rem 0 0.9rem 1.5rem; }
+    .content li { margin-bottom: 0.3rem; }
+    code { font-family: var(--font-mono); font-size: 0.875em; background: var(--color-code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+    pre { background: #1e293b; color: #e2e8f0; border-radius: var(--radius); padding: 1.25rem; overflow-x: auto; margin: 0.75rem 0 1.25rem; }
+    pre code { background: none; padding: 0; font-size: 0.85rem; line-height: 1.6; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.75rem 0 1.25rem; }
+    th { background: var(--color-bg-alt); text-align: left; padding: 0.6rem 0.9rem; font-weight: 600; border-bottom: 2px solid var(--color-border); }
+    td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    .callout { border-left: 4px solid var(--color-accent); background: #eff6ff; padding: 0.9rem 1.1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0 1.25rem; }
+    .callout.warning { border-color: var(--color-warning); background: #fff8f0; }
+    .callout.danger { border-color: var(--color-danger); background: #fff5f5; }
+    .callout.success { border-color: var(--color-success); background: #f0fdf4; }
+    .callout p { margin: 0; font-size: 0.9rem; }
+    .callout strong { display: block; margin-bottom: 0.2rem; }
+    .callout pre { margin: 0.5rem 0 0; }
+
+    footer { background: var(--color-bg-dark); color: #64748b; text-align: center; padding: 2rem; font-size: 0.85rem; margin-top: 3rem; }
+    footer p { color: inherit; }
+    footer a { color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="../" class="brand">nuget<span>-audit</span></a>
+  <ul>
+    <li><a href="../zero-trust/">Zero-Trust Workflow</a></li>
+    <li><a href="../solo-workflow/">Solo Dev</a></li>
+    <li><a href="../guide/">User Guide</a></li>
+    <li><a href="../dependabot/">Dependabot</a></li>
+    <li><a href="../policy/" style="color:#fff">Policy Guide</a></li>
+    <li><a href="https://www.nuget.org/packages/nuget-audit" class="nav-cta">Install</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="breadcrumb"><a href="../">nuget-audit</a> / Policy Enforcement Guide</div>
+  <h1>Enforcing NuGet Package Policy Across a Team</h1>
+  <p>Using <code style="background:rgba(255,255,255,0.1);color:#e2e8f0">TrustConfig.json</code>
+  and the three enforcement levels to set and maintain organizational decisions about which
+  packages are allowed.</p>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-title">On this page</div>
+    <nav>
+      <ul>
+        <li><a href="#what-is-policy">What policy enforcement means</a></li>
+        <li><a href="#enforcement-levels">The three enforcement levels</a></li>
+        <li><a href="#forcing-migrations">Forcing package migrations</a></li>
+        <li><a href="#compliance-controls">Compliance and architectural controls</a></li>
+        <li><a href="#brownfield">Brownfield adoption</a></li>
+        <li><a href="#breakdown">When policy breaks down</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="content">
+
+    <h2 id="what-is-policy">What policy enforcement means</h2>
+    <p>
+      <code>TrustConfig.json</code> is not just a personal trust list — it is the
+      organizational record of which packages and publishers are approved for use. When it
+      is checked into source control and the audit runs in CI, any package not on the
+      approved list causes the build to fail. That is policy enforcement.
+    </p>
+    <p>
+      This means you can use <code>TrustConfig.json</code> to express organizational
+      decisions beyond security:
+    </p>
+    <ul>
+      <li>Which publishers are pre-approved across all projects</li>
+      <li>Which specific package versions have been reviewed and accepted</li>
+      <li>Which packages are blocked from use (by omission from the trust list)</li>
+      <li>Which packages are being sunset (by removing them from the approved list)</li>
+    </ul>
+    <p>
+      The enforcement is automatic — developers do not need to remember to check. The CI
+      gate and VS pre-build target enforce it on every build and every PR.
+    </p>
+
+    <h2 id="enforcement-levels">The three enforcement levels</h2>
+    <p>
+      Policy is enforced at three points, each catching a different class of violation:
+    </p>
+    <table>
+      <thead>
+        <tr><th>Level</th><th>Mechanism</th><th>What it catches</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Developer machine</strong></td>
+          <td><code>Directory.Build.targets</code> pre-build target</td>
+          <td>Unapproved packages before the first local build after a restore</td>
+        </tr>
+        <tr>
+          <td><strong>CI/CD</strong></td>
+          <td><code>nuget-audit audit --check</code> as a required status check</td>
+          <td>Any PR or merge that introduces an unapproved package</td>
+        </tr>
+        <tr>
+          <td><strong>Lock files</strong></td>
+          <td><code>packages.lock.json</code> + <code>RestoreLockedMode=true</code></td>
+          <td>Unauthorized changes to the resolved graph — restore fails if the lock is out of date</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      All three levels together mean a package cannot enter the project silently. A developer
+      adding an unapproved package must edit the project file (caught by the lock file on
+      restore), restore (generating a new lock file that differs from the committed one), and
+      build (where the pre-build target fires). The CI gate catches anything that slips
+      through.
+    </p>
+    <p>
+      Run <code>nuget-audit init --path &lt;dir&gt;</code> to create
+      <code>Directory.Build.targets</code> and a default <code>TrustConfig.json</code>.
+      See the <a href="../zero-trust/">zero-trust workflow guide</a> for full setup
+      instructions.
+    </p>
+
+    <h2 id="forcing-migrations">Forcing package migrations</h2>
+    <p>
+      Removing a package or owner from <code>TrustConfig.json</code> causes CI to fail on
+      any project that still uses it. This is a controlled mechanism for forcing teams to
+      migrate away from deprecated or unwanted packages.
+    </p>
+
+    <h3>Example: migrating off a deprecated package</h3>
+    <pre><code>// Before: Newtonsoft.Json is in trustedPackages
+{
+  "trustedOwners": ["Microsoft", "dotnetfoundation"],
+  "trustedPackages": [
+    { "id": "Newtonsoft.Json", "version": "13.0.3" }
+  ]
+}
+
+// After: remove the entry to block further use
+{
+  "trustedOwners": ["Microsoft", "dotnetfoundation"],
+  "trustedPackages": []
+}</code></pre>
+    <p>
+      Any project that still references <code>Newtonsoft.Json</code> will now fail CI with
+      an <code>Untrusted</code> status. The failure tells the developer exactly which package
+      needs attention — migrate off it, or re-approve it if the decision is reversed.
+    </p>
+    <div class="callout warning">
+      <strong>Communicate before removing</strong>
+      <p>Removing an entry blocks builds immediately. Give teams notice before committing
+      the change to <code>TrustConfig.json</code>, and document the planned removal in your
+      project's decision log.</p>
+    </div>
+
+    <h3>Example: moving an owner from broadly trusted to per-version review</h3>
+    <p>
+      Removing an owner from <code>trustedOwners</code> does not immediately block existing
+      pinned versions in <code>trustedPackages</code>. Any package from that owner that is
+      <em>not</em> explicitly pinned will be flagged as <code>VerifiedUnknownOwner</code>
+      and require review.
+    </p>
+    <p>
+      This is useful when you want to increase scrutiny of a publisher's packages without
+      immediately blocking builds — moving from "broadly trusted" to "reviewed per version."
+    </p>
+
+    <h2 id="compliance-controls">Compliance and architectural controls</h2>
+    <p>
+      The same mechanism supports organizational rules beyond security:
+    </p>
+
+    <h3>Prefer internal or forked packages</h3>
+    <p>
+      If your organization maintains internal forks or mirrors of public packages, keep the
+      public package out of <code>TrustConfig.json</code>. Any project that accidentally
+      references the public version will fail CI, directing developers to the internal
+      package instead.
+    </p>
+
+    <h3>Enforce <code>System.*</code> over third-party equivalents</h3>
+    <p>
+      For functionality now covered by the .NET runtime — <code>System.Text.Json</code>
+      replacing <code>Newtonsoft.Json</code>, <code>Microsoft.Extensions.*</code> replacing
+      earlier third-party equivalents — remove the third-party package from the trust list.
+      Add a comment to <code>TrustConfig.json</code> documenting the architectural decision
+      so the reason is visible when someone hits the CI failure.
+    </p>
+
+    <h3>Compliance-driven exclusions</h3>
+    <p>
+      If legal or compliance requirements prohibit specific packages or licenses, omitting
+      them from <code>TrustConfig.json</code> creates an automatic enforcement gate. When
+      a developer adds such a package — intentionally or as a transitive dependency — the
+      CI failure names the package and owner, providing an audit trail.
+    </p>
+
+    <h2 id="brownfield">Brownfield adoption</h2>
+    <p>
+      Introducing policy enforcement into an existing project requires a one-time approval
+      pass to baseline the current state before enforcement begins.
+    </p>
+    <pre><code># 1. See everything currently in the graph and its trust status
+nuget-audit audit --all --path .
+
+# 2. Generate copy-paste entries for TrustConfig.json
+nuget-audit audit --package-list --include-existing --path .
+
+# 3. Edit TrustConfig.json: add owners to trustedOwners,
+#    add specific versions to trustedPackages
+
+# 4. Re-run until clean
+nuget-audit audit --path .
+
+# 5. Lock the graph and commit
+dotnet restore --force-evaluate
+git add packages.lock.json TrustConfig.json
+git commit -m "Baseline NuGet trust policy"</code></pre>
+    <p>
+      After the baseline commit, CI enforcement begins. Any new package added to the project
+      must be approved in <code>TrustConfig.json</code> before CI passes.
+    </p>
+    <div class="callout">
+      <strong><code>--include-existing</code> for a full inventory</strong>
+      <p><code>--package-list --include-existing</code> shows all packages grouped by trust
+      status — useful for the initial review pass on a large project with many existing
+      dependencies.</p>
+    </div>
+
+    <h2 id="breakdown">When policy breaks down</h2>
+    <p>
+      The most common ways the enforcement model fails, and what to do about them:
+    </p>
+    <table>
+      <thead>
+        <tr><th>Failure mode</th><th>How it happens</th><th>Prevention</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Lock file not committed</td>
+          <td>Developer runs <code>--force-evaluate</code> without committing the updated lock file</td>
+          <td>CI restore fails if the committed lock file does not match; the advisory check flags missing lock files</td>
+        </tr>
+        <tr>
+          <td>CI check not required</td>
+          <td>Audit runs in CI but is not a required status check — PRs can merge even if it fails</td>
+          <td>Make <code>nuget-audit audit --check</code> a required status check in branch protection rules</td>
+        </tr>
+        <tr>
+          <td>Pre-build target missing</td>
+          <td><code>Directory.Build.targets</code> not created or not at solution root</td>
+          <td><code>--check</code> warns on this condition; run <code>nuget-audit init</code> to create it</td>
+        </tr>
+        <tr>
+          <td><code>TrustConfig.json</code> grows without review</td>
+          <td>Developers add entries to unblock CI without reviewing the package</td>
+          <td>Require a designated reviewer on <code>TrustConfig.json</code> changes via
+          <code>CODEOWNERS</code></td>
+        </tr>
+        <tr>
+          <td>Multiple solutions, config in wrong location</td>
+          <td><code>TrustConfig.json</code> not found at expected path</td>
+          <td>Use <code>--trust-config</code> to specify the path explicitly in the CI
+          command and <code>Directory.Build.targets</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>CODEOWNERS for TrustConfig.json</strong>
+      <p>Add a <code>CODEOWNERS</code> entry requiring a designated reviewer for any PR
+      that modifies <code>TrustConfig.json</code>. This prevents the trust list from
+      drifting without oversight.</p>
+      <pre><code># .github/CODEOWNERS
+TrustConfig.json    @your-org/security-reviewers</code></pre>
+    </div>
+
+    <div class="callout success">
+      <strong>Setting up the policy for the first time?</strong>
+      <p>See the <a href="../zero-trust/">zero-trust workflow guide</a> for the complete
+      setup sequence — lock files, CI gates, VS pre-build enforcement, and the ongoing
+      package update workflow.</p>
+    </div>
+
+  </div><!-- .content -->
+</div><!-- .layout -->
+
+<footer>
+  <p>Copyright &copy; 2026 James Zuras. &nbsp; &nbsp;
+  <a href="https://www.nuget.org/packages/nuget-audit">NuGet.org</a></p>
+</footer>
+
+</body>
+</html>
