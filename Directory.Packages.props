@@ -1,0 +1,20 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Core -->
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageVersion Include="NuGet.Versioning" Version="7.3.1" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+    <!-- CLI -->
+    <PackageVersion Include="System.CommandLine" Version="2.0.6" />
+    <PackageVersion Include="Spectre.Console" Version="0.55.2" />
+    <!-- Tests -->
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <!-- Transitive overrides: force non-deprecated versions pulled in by xunit/MTP -->
+    <PackageVersion Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.0" />
+    <PackageVersion Include="System.Security.AccessControl" Version="6.0.1" />
+  </ItemGroup>
+</Project>

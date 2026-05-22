@@ -1,0 +1,16 @@
+<Project>
+  <Target Name="AuditIfRestoreChanged" BeforeTargets="Build">
+    <PropertyGroup>
+      <_SentinelFile>$(MSBuildThisFileDirectory).nuget-audit-ok</_SentinelFile>
+      <_LockFile>$(MSBuildProjectDirectory)packages.lock.json</_LockFile>
+      <_AuditPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory).'))</_AuditPath>
+    </PropertyGroup>
+    <Exec
+      Command="nuget-audit audit --check --path &quot;$(_AuditPath)&quot;"
+      Condition="!Exists('$(_SentinelFile)') Or
+                 $([System.IO.File]::GetLastWriteTime('$(_LockFile)').Ticks) &gt;
+                  $([System.IO.File]::GetLastWriteTime('$(_SentinelFile)').Ticks)" />
+    <Touch Files="$(_SentinelFile)" AlwaysCreate="true"
+           Condition="'$(MSBuildLastTaskResult)' != 'false'" />
+  </Target>
+</Project>

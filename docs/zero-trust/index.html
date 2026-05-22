@@ -224,13 +224,15 @@ nuget-audit trust-owner &lt;owner&gt; --path .        # verified publishers you 
 nuget-audit trust-package &lt;id&gt; &lt;ver&gt; --path .  # everything else
 nuget-audit audit --path .
 
-# 4. Lock the graph
-#    Add RestoreLockedMode=true to Directory.Build.props:
+# 4. Lock the graph — add both properties to Directory.Build.props:
 #    &lt;Project&gt;
 #      &lt;PropertyGroup&gt;
+#        &lt;RestorePackagesWithLockFile&gt;true&lt;/RestorePackagesWithLockFile&gt;
 #        &lt;RestoreLockedMode&gt;true&lt;/RestoreLockedMode&gt;
 #      &lt;/PropertyGroup&gt;
 #    &lt;/Project&gt;
+#    RestorePackagesWithLockFile generates packages.lock.json for every project.
+#    RestoreLockedMode enforces it — restore fails if the graph would change.
 dotnet restore --force-evaluate
 
 # 5. Add .nuget-audit-ok to .gitignore (machine-local sentinel created by Directory.Build.targets)
@@ -394,9 +396,15 @@ nuget-audit audit --path .
 
     <h2 id="lock-file">The lock file and RestoreLockedMode</h2>
     <p>
-      With <code>RestoreLockedMode=true</code> committed to <code>Directory.Build.props</code>,
-      any restore that would change the resolved graph fails rather than silently succeeding:
+      Two properties work together — both belong in <code>Directory.Build.props</code>:
     </p>
+    <ul>
+      <li><code>RestorePackagesWithLockFile=true</code> — tells NuGet to generate
+      <code>packages.lock.json</code> for each project and use it on every restore.
+      Without this, no lock file is created, even if <code>RestoreLockedMode</code> is set.</li>
+      <li><code>RestoreLockedMode=true</code> — enforces the lock file: any restore that
+      would change the resolved graph fails rather than silently succeeding.</li>
+    </ul>
     <pre><code>error NU1004: The lock file is out of date. To update the lock file run the
 following command: dotnet restore --force-evaluate</code></pre>
     <p>

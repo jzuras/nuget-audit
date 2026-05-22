@@ -1,0 +1,16 @@
+<Project>
+  <!-- Import root Directory.Build.props so its settings (RestoreLockedMode, etc.) still apply. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- NugetAudit.Cli.WithUI.csproj lives in the same directory as NugetAudit.Cli.csproj.
+       To avoid sharing obj/ and packages.lock.json, redirect its intermediate output path here,
+       before Microsoft.Common.props is imported (which is required for BaseIntermediateOutputPath). -->
+  <PropertyGroup Condition="'$(MSBuildProjectFile)' == 'NugetAudit.Cli.WithUI.csproj'">
+    <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)\obj\WithUI\</MSBuildProjectExtensionsPath>
+    <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)\obj\WithUI\</BaseIntermediateOutputPath>
+    <NuGetLockFilePath>$(MSBuildProjectDirectory)\packages.withui.lock.json</NuGetLockFilePath>
+    <!-- Exclude the shared obj/ root so that no-UI build artifacts (obj/Debug/net8.0/, etc.)
+         are not picked up by the SDK's default Compile glob for this project. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)\obj\**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

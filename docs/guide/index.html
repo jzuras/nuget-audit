@@ -197,6 +197,24 @@ Run nuget-audit audit for full details.</code></pre>
       cannot be auto-resolved without querying nuget.org.
     </p>
 
+    <h3>Supply chain transition warning</h3>
+    <p>
+      If the currently installed version of a package came exclusively from a private feed
+      and the target version now appears on nuget.org, <code>preview-update</code> emits a
+      warning before the normal output. A red alert (⛔) fires when the publisher has no
+      nuget.org prefix reservation or is not a trusted owner — a potential dependency confusion
+      attack. A yellow notice (⚠) fires when the publisher is verified and trusted — a likely
+      legitimate vendor move worth confirming before applying.
+    </p>
+
+    <h3>Package Source Mapping conflict</h3>
+    <p>
+      If your NuGet.config has Package Source Mapping and the target version is available on
+      nuget.org but PSM restricts that package to a private feed, <code>preview-update</code>
+      emits a specific error explaining which feed is blocking the search and how to add a
+      nuget.org mapping to resolve it — rather than a generic restore failure.
+    </p>
+
     <h3>Stale lock file fallback</h3>
     <p>
       When <code>RestoreLockedMode=true</code> is in effect and the lock file is out of
@@ -306,7 +324,7 @@ Run nuget-audit audit for full details.</code></pre>
     <table>
       <thead><tr><th>Topic</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td><code>lock-files</code></td><td>Lock file enforcement and <code>RestoreLockedMode</code> — why deterministic restores are foundational to the zero-trust workflow, with setup steps</td></tr>
+        <tr><td><code>lock-files</code></td><td>Lock file setup and enforcement — <code>RestorePackagesWithLockFile</code> to generate lock files, <code>RestoreLockedMode</code> to enforce them; why deterministic restores are foundational to the zero-trust workflow</td></tr>
         <tr><td><code>psm</code></td><td>Package Source Mapping and dependency confusion — how PSM prevents NuGet from resolving packages from unintended feeds</td></tr>
         <tr><td><code>exec-content</code></td><td>Executable content in NuGet packages — why MSBuild targets and Roslyn analyzers expand the trust surface beyond the package library itself</td></tr>
       </tbody>
@@ -526,7 +544,7 @@ nuget-audit audit --format json --output "audit-2026-01-05.json" --path .</code>
     <h2 id="related">Related tools</h2>
     <p>Pair <code>nuget-audit</code> with:</p>
     <ul>
-      <li><strong>NuGet lock files</strong> (<code>packages.lock.json</code> + <code>RestoreLockedMode=true</code>) — pins the resolved graph; <code>dotnet restore</code> cannot silently pull in different versions between runs. Run <code>nuget-audit explain lock-files</code> for setup steps.</li>
+      <li><strong>NuGet lock files</strong> (<code>packages.lock.json</code> + <code>RestorePackagesWithLockFile=true</code> to generate, <code>RestoreLockedMode=true</code> to enforce) — pins the resolved graph; <code>dotnet restore</code> cannot silently pull in different versions between runs. Run <code>nuget-audit explain lock-files</code> for setup steps.</li>
       <li><strong>Package Source Mapping</strong> — locks packages to specific feeds, preventing dependency confusion attacks. Run <code>nuget-audit explain psm</code> for details.</li>
       <li><strong>Central Package Management</strong> — centralizes version declarations in <code>Directory.Packages.props</code>; version changes are visible in one place</li>
       <li><strong>NuGet package signing</strong> (<code>&lt;trustedSigners&gt;</code>) — cryptographic publisher verification; signatures break if a new owner signs with a different key</li>

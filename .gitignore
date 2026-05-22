@@ -1,0 +1,28 @@
+# Build outputs
+bin/
+obj/
+nupkg/
+
+# User-specific files
+*.user
+*.suo
+.vs/
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Rider
+.idea/
+
+# macOS
+.DS_Store
+
+# Code graph tool databases
+.graphs/
+
+# nuget-audit machine-local sentinel (created by Directory.Build.targets pre-build check)
+.nuget-audit-ok
+
+# readme for self
+ReadMe.txt

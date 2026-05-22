@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Enforce lock file on all machines, not just CI.
+         To update packages intentionally: dotnet restore with the force-evaluate flag -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode>true</RestoreLockedMode>
+  </PropertyGroup>
+</Project>

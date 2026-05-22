@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NugetAudit.Cli/NugetAudit.Cli.csproj" />
+    <Project Path="src/NugetAudit.Core/NugetAudit.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NugetAudit.Cli.Tests/NugetAudit.Cli.Tests.csproj" />
+    <Project Path="tests/NugetAudit.Core.Tests/NugetAudit.Core.Tests.csproj" />
+  </Folder>
+</Solution>

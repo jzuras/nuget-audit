@@ -1,0 +1,23 @@
+{
+  "trustedOwners": [
+    "Microsoft",
+    "dotnetfoundation",
+    "aspnet",
+    "xunit"
+  ],
+  "trustedPackages": [
+    {
+      "id": "EXAMPLE.PACKAGE",
+      "version": "1.0.0"
+    },
+    {
+      "id": "Spectre.Console",
+      "version": "0.55.2"
+    },
+    {
+      "id": "Spectre.Console.Ansi",
+      "version": "0.55.2"
+    }
+  ],
+  "recentDaysThreshold": 14
+}
