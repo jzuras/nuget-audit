@@ -32,7 +32,7 @@ public class PreviewService : IPreviewService
     /// Shared <see cref="HttpClient"/> used only for the nuget.org package-existence check in
     /// <see cref="IsOnNuGetOrgAsync"/>. Kept as a static singleton to avoid socket exhaustion.
     /// </summary>
-    private static readonly HttpClient NuGetOrgHttpClient = new() { Timeout = TimeSpan.FromSeconds(5) };
+    private static HttpClient NuGetOrgHttpClient { get; } = new() { Timeout = TimeSpan.FromSeconds(5) };
 
     #endregion
 

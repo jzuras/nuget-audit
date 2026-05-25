@@ -9,7 +9,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>nuget-audit</ToolCommandName>
     <PackageId>nuget-audit</PackageId>
-    <Version>1.0.5</Version>
+    <Version>1.0.7</Version>
     <Authors>Jim Zuras</Authors>
     <Copyright>Copyright (c) James Zuras 2026</Copyright>
     <Description>Audits NuGet package trust by verifying nuget.org prefix reservation and surfacing publisher trust signals: newly published versions, deprecations, vulnerabilities, and executable content. A single CI gate for zero-trust dependency management.</Description>
@@ -18,7 +18,7 @@
     <RepositoryUrl>https://github.com/jzuras/nuget-audit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>nuget security audit trust vulnerability</PackageTags>
-    <PackageReleaseNotes>Fix: preview-update now detects when a private-feed package appears on nuget.org and warns of potential supply chain risk. Fix: Package Source Mapping blocking a preview-update now produces a clear, actionable error message.</PackageReleaseNotes>
+    <PackageReleaseNotes>Improvement: trust-package now automatically removes the EXAMPLE.PACKAGE placeholder when the first real package is added. Fix: trust status labels clarified for prefix-verified packages with untrusted owners.</PackageReleaseNotes>
     <PackageIcon>icon.png</PackageIcon>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>

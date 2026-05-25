@@ -4,5 +4,8 @@
          To update packages intentionally: dotnet restore with the force-evaluate flag -->
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <RestoreLockedMode>true</RestoreLockedMode>
+    <!-- Escalate .editorconfig coding standard rules to build errors -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 </Project>

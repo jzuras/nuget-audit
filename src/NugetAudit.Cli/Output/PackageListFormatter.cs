@@ -46,7 +46,7 @@ internal static class PackageListFormatter
 
     /// <summary>
     /// Renders only the packages needing review, grouped into three sections:
-    /// prefix-verified unknown owner, unverified, and version-changed.
+    /// prefix-verified untrusted owner, unverified, and version-changed.
     /// Includes a TrustedOwners alternative suggestion at the end.
     /// </summary>
     /// <param name="packages">All audited packages.</param>

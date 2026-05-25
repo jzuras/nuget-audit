@@ -178,7 +178,7 @@ internal static class InitCommand
             AnsiConsole.MarkupLine("[grey]       This outputs ready-to-paste entries for each package needing review.[/]");
             AnsiConsole.MarkupLine("[grey]       Or use trust-owner / trust-package to update the file directly[/]");
             AnsiConsole.MarkupLine("[grey]       (run [bold]nuget-audit trust-owner --help[/] or [bold]trust-package --help[/] for details).[/]");
-            AnsiConsole.MarkupLine("[grey]       Replace the EXAMPLE.PACKAGE placeholder in TrustConfig.json with your entries.[/]");
+            AnsiConsole.MarkupLine("[grey]       The EXAMPLE.PACKAGE placeholder is removed automatically when you add your first real entry.[/]");
             AnsiConsole.MarkupLine($"[white]  {step++}. Run: [bold]nuget-audit audit --path \"{escapedDir}\"[/][/]");
         }
 

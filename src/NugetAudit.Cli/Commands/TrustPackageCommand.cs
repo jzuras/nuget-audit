@@ -118,6 +118,7 @@ internal static class TrustPackageCommand
 
         TrustedPackageEntry[] packages;
         bool replaced = existing is not null;
+        bool placeholderRemoved = false;
 
         if (replaced)
         {
@@ -130,7 +131,12 @@ internal static class TrustPackageCommand
         }
         else
         {
-            packages = [.. config.TrustedPackages, new TrustedPackageEntry(id, version)];
+            // Remove the init placeholder when the first real entry is added.
+            var withoutPlaceholder = config.TrustedPackages
+                .Where(p => !string.Equals(p.Id, "EXAMPLE.PACKAGE", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            placeholderRemoved = withoutPlaceholder.Length < config.TrustedPackages.Length;
+            packages = [.. withoutPlaceholder, new TrustedPackageEntry(id, version)];
         }
 
         var updated = config with { TrustedPackages = packages };
@@ -152,6 +158,11 @@ internal static class TrustPackageCommand
         }
         else
         {
+            if (placeholderRemoved)
+            {
+                AnsiConsole.MarkupLine("[grey]  Removed EXAMPLE.PACKAGE placeholder.[/]");
+            }
+
             AnsiConsole.MarkupLine(
                 $"[green]Added '[bold]{Markup.Escape(id)} {Markup.Escape(version)}[/]' to trustedPackages in:[/] [white]{Markup.Escape(configPath)}[/]");
         }

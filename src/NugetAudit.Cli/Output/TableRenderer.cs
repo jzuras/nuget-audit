@@ -366,7 +366,7 @@ internal static class TableRenderer
             TrustStatus.Verified             => "Verified",
             TrustStatus.PrivateFeed          => "PrivateFeed",
             TrustStatus.TrustedPackage       => "Approved",
-            TrustStatus.VerifiedUnknownOwner => "UnknownOwner",
+            TrustStatus.VerifiedUnknownOwner => "Untrusted",
             TrustStatus.VersionChanged       => "!VerChg!",
             TrustStatus.Untrusted            => "Untrusted",
             _                                => status.ToString(),

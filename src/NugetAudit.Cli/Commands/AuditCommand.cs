@@ -584,7 +584,7 @@ internal static class AuditCommand
 
         if (unknownOwner > 0)
         {
-            AnsiConsole.MarkupLine($"[yellow]  Verified prefix, unknown owner:            {unknownOwner}[/]");
+            AnsiConsole.MarkupLine($"[yellow]  Verified but untrusted owner:              {unknownOwner}[/]");
         }
 
         if (versionChanged > 0)

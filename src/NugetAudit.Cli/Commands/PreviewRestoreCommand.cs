@@ -236,7 +236,7 @@ internal static class PreviewRestoreCommand
 
         if (unknownOwner > 0)
         {
-            AnsiConsole.MarkupLine($"[yellow]  Verified, unknown owner:    {unknownOwner}[/]");
+            AnsiConsole.MarkupLine($"[yellow]  Verified but untrusted owner:  {unknownOwner}[/]");
         }
 
         if (versionChg > 0)
