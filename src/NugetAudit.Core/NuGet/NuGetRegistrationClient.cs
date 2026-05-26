@@ -1,10 +1,7 @@
 using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using NugetAudit.Core;
 using NugetAudit.Core.Models;
 using NugetAudit.Core.Services;
 using NugetAudit.Core.Trust;
@@ -57,6 +54,8 @@ public class NuGetRegistrationClient : INuGetRegistrationClient
         FeedCredential? credential,
         CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(packageId);
+        ArgumentNullException.ThrowIfNull(baseUrl);
         try
         {
             string packageIdLower = packageId.ToLowerInvariant();
@@ -142,6 +141,8 @@ public class NuGetRegistrationClient : INuGetRegistrationClient
         FeedCredential? credential,
         CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(packageId);
+        ArgumentNullException.ThrowIfNull(baseUrl);
         try
         {
             string packageIdLower = packageId.ToLowerInvariant();
@@ -525,7 +526,7 @@ public class NuGetRegistrationClient : INuGetRegistrationClient
     {
         /// <summary>Gets or sets the registration pages for this package.</summary>
         [JsonPropertyName("items")]
-        public RegistrationPage[] Items { get; set; } = [];
+        public RegistrationPage[] Items { get; init; } = [];
     }
 
     /// <summary>
@@ -536,19 +537,19 @@ public class NuGetRegistrationClient : INuGetRegistrationClient
     {
         /// <summary>Gets or sets the URL for this page (used to fetch non-inlined items).</summary>
         [JsonPropertyName("@id")]
-        public string? Id { get; set; }
+        public string? Id { get; init; }
 
         /// <summary>Gets or sets the lowest version in this page's range.</summary>
         [JsonPropertyName("lower")]
-        public string? Lower { get; set; }
+        public string? Lower { get; init; }
 
         /// <summary>Gets or sets the highest version in this page's range.</summary>
         [JsonPropertyName("upper")]
-        public string? Upper { get; set; }
+        public string? Upper { get; init; }
 
         /// <summary>Gets or sets the inlined package items; null when the page must be fetched separately.</summary>
         [JsonPropertyName("items")]
-        public RegistrationPageItem[]? Items { get; set; }
+        public RegistrationPageItem[]? Items { get; init; }
     }
 
     /// <summary>
@@ -558,7 +559,7 @@ public class NuGetRegistrationClient : INuGetRegistrationClient
     {
         /// <summary>Gets or sets the catalog entry containing package metadata.</summary>
         [JsonPropertyName("catalogEntry")]
-        public RegistrationCatalogEntry? CatalogEntry { get; set; }
+        public RegistrationCatalogEntry? CatalogEntry { get; init; }
     }
 
     /// <summary>
@@ -569,49 +570,49 @@ public class NuGetRegistrationClient : INuGetRegistrationClient
     {
         /// <summary>Gets or sets the package identifier.</summary>
         [JsonPropertyName("id")]
-        public string? Id { get; set; }
+        public string? Id { get; init; }
 
         /// <summary>Gets or sets the package version string.</summary>
         [JsonPropertyName("version")]
-        public string? Version { get; set; }
+        public string? Version { get; init; }
 
         /// <summary>Gets or sets the package authors string.</summary>
         [JsonPropertyName("authors")]
-        public string? Authors { get; set; }
+        public string? Authors { get; init; }
 
         /// <summary>Gets or sets the package description.</summary>
         [JsonPropertyName("description")]
-        public string? Description { get; set; }
+        public string? Description { get; init; }
 
         /// <summary>Gets or sets the package project URL.</summary>
         [JsonPropertyName("projectUrl")]
-        public string? ProjectUrl { get; set; }
+        public string? ProjectUrl { get; init; }
 
         /// <summary>Gets or sets the SPDX license expression.</summary>
         [JsonPropertyName("licenseExpression")]
-        public string? LicenseExpression { get; set; }
+        public string? LicenseExpression { get; init; }
 
         /// <summary>Gets or sets the fallback license URL for packages predating license expressions.</summary>
         [JsonPropertyName("licenseUrl")]
-        public string? LicenseUrl { get; set; }
+        public string? LicenseUrl { get; init; }
 
         /// <summary>Gets or sets the publication date.</summary>
         [JsonPropertyName("published")]
-        public DateTimeOffset? Published { get; set; }
+        public DateTimeOffset? Published { get; init; }
 
         /// <summary>
         /// Gets or sets the deprecation node; a non-null, non-Null JSON node indicates the package is deprecated.
         /// </summary>
         [JsonPropertyName("deprecation")]
-        public JsonNode? Deprecation { get; set; }
+        public JsonNode? Deprecation { get; init; }
 
         /// <summary>Gets or sets the vulnerabilities array; non-empty indicates known vulnerabilities.</summary>
         [JsonPropertyName("vulnerabilities")]
-        public JsonElement[]? Vulnerabilities { get; set; }
+        public JsonElement[]? Vulnerabilities { get; init; }
 
         /// <summary>Gets or sets the dependency groups for this package version, keyed by target framework.</summary>
         [JsonPropertyName("dependencyGroups")]
-        public RegistrationDependencyGroup[]? DependencyGroups { get; set; }
+        public RegistrationDependencyGroup[]? DependencyGroups { get; init; }
     }
 
     /// <summary>
@@ -621,11 +622,11 @@ public class NuGetRegistrationClient : INuGetRegistrationClient
     {
         /// <summary>Gets or sets the target framework moniker; null or empty for a catch-all group.</summary>
         [JsonPropertyName("targetFramework")]
-        public string? TargetFramework { get; set; }
+        public string? TargetFramework { get; init; }
 
         /// <summary>Gets or sets the dependencies in this group.</summary>
         [JsonPropertyName("dependencies")]
-        public RegistrationDependencyItem[]? Dependencies { get; set; }
+        public RegistrationDependencyItem[]? Dependencies { get; init; }
     }
 
     /// <summary>
@@ -635,11 +636,11 @@ public class NuGetRegistrationClient : INuGetRegistrationClient
     {
         /// <summary>Gets or sets the NuGet package identifier of the dependency.</summary>
         [JsonPropertyName("id")]
-        public string? Id { get; set; }
+        public string? Id { get; init; }
 
         /// <summary>Gets or sets the version range expression; null or empty means no constraint.</summary>
         [JsonPropertyName("range")]
-        public string? Range { get; set; }
+        public string? Range { get; init; }
     }
 
     #endregion

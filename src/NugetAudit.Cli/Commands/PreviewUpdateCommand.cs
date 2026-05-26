@@ -1,4 +1,4 @@
-using NugetAudit.Cli.Output;
+﻿using NugetAudit.Cli.Output;
 using NugetAudit.Core;
 using NugetAudit.Core.Models;
 using NugetAudit.Core.Services;
@@ -58,7 +58,7 @@ internal static class PreviewUpdateCommand
 
         command.Arguments.Add(packageIdArgument);
 
-        command.SetAction(parseResult =>
+        command.SetAction(async (parseResult, ct) =>
         {
             string packageId = parseResult.GetValue(packageIdArgument) ?? string.Empty;
             string path = parseResult.GetValue(pathOption) ?? ".";
@@ -73,9 +73,9 @@ internal static class PreviewUpdateCommand
                 return;
             }
 
-            int exitCode = RunPreviewUpdateAsync(
+            int exitCode = await RunPreviewUpdateAsync(
                 packageId, path, version, trustConfigPath, useFast,
-                CancellationToken.None).GetAwaiter().GetResult();
+                ct);
 
             Environment.ExitCode = exitCode;
         });
@@ -92,6 +92,7 @@ internal static class PreviewUpdateCommand
     /// <param name="path">Path to the solution, project, or directory.</param>
     /// <param name="version">Target version; null resolves latest stable.</param>
     /// <param name="trustConfigPath">Optional path to TrustConfig.json.</param>
+    /// <param name="useFast">When true, use the approximate BFS resolver instead of dotnet restore.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>0 on success, 1 on error.</returns>
     private static async Task<int> RunPreviewUpdateAsync(
@@ -124,13 +125,13 @@ internal static class PreviewUpdateCommand
         catch (System.Text.Json.JsonException)
         {
             Console.WriteLine();
-            AnsiConsole.MarkupLine("[red]Error: The trust config path does not point to a valid JSON file — make sure you selected TrustConfig.json, not a project or solution file.[/]");
+            AnsiConsole.MarkupLine("[red]Error: TrustConfig.json contains invalid JSON -- not a .sln or .csproj file.[/]");
             return 1;
         }
         catch (UnauthorizedAccessException)
         {
             Console.WriteLine();
-            AnsiConsole.MarkupLine("[red]Error: Access to the specified file was denied — check file permissions.[/]");
+            AnsiConsole.MarkupLine("[red]Error: Access to the specified file was denied  -- check file permissions.[/]");
             return 1;
         }
         catch (IOException ex)
@@ -170,7 +171,7 @@ internal static class PreviewUpdateCommand
             }
             else
             {
-                AnsiConsole.MarkupLine("[yellow bold]WARNING: This package is on a private feed. Exact restore is not supported for private feeds — results are approximate.[/]");
+                AnsiConsole.MarkupLine("[yellow bold]WARNING: This package is on a private feed. Exact restore is not supported for private feeds  -- results are approximate.[/]");
                 AnsiConsole.MarkupLine("[yellow]  Results may differ from what actually gets installed.[/]");
                 AnsiConsole.MarkupLine("[yellow]  Do not use for security-critical decisions.[/]");
             }

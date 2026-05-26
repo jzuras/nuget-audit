@@ -1,5 +1,5 @@
 using System.Text.Json;
-using NugetAudit.Core;
+using System.Text.Json.Serialization;
 using NugetAudit.Core.Models;
 using NugetAudit.Core.Services;
 
@@ -81,13 +81,16 @@ public class TrustConfigLoader : ITrustConfigLoader
     private sealed class TrustConfigDto
     {
         /// <summary>Gets or sets the trusted owner account names.</summary>
-        public string[]? TrustedOwners { get; set; }
+        [JsonPropertyName("trustedOwners")]
+        public string[]? TrustedOwners { get; init; }
 
         /// <summary>Gets or sets the explicitly trusted package entries.</summary>
-        public TrustedPackageEntryDto[]? TrustedPackages { get; set; }
+        [JsonPropertyName("trustedPackages")]
+        public TrustedPackageEntryDto[]? TrustedPackages { get; init; }
 
         /// <summary>Gets or sets the recent-days threshold for supply chain freshness warnings.</summary>
-        public int? RecentDaysThreshold { get; set; }
+        [JsonPropertyName("recentDaysThreshold")]
+        public int? RecentDaysThreshold { get; init; }
     }
 
     /// <summary>
@@ -96,10 +99,12 @@ public class TrustConfigLoader : ITrustConfigLoader
     private sealed class TrustedPackageEntryDto
     {
         /// <summary>Gets or sets the NuGet package identifier.</summary>
-        public string? Id { get; set; }
+        [JsonPropertyName("id")]
+        public string? Id { get; init; }
 
         /// <summary>Gets or sets the trusted version string.</summary>
-        public string? Version { get; set; }
+        [JsonPropertyName("version")]
+        public string? Version { get; init; }
     }
 
     #endregion

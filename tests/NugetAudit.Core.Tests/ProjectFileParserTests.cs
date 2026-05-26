@@ -7,7 +7,7 @@ namespace NugetAudit.Core.Tests;
 /// CPM lookup, TFM detection, .sln/.slnx resolution, and deduplication.
 /// Uses a temporary directory per test to avoid cross-test interference.
 /// </summary>
-public class ProjectFileParserTests : IDisposable
+public sealed class ProjectFileParserTests : IDisposable
 {
     #region Setup / Teardown
 
@@ -35,6 +35,8 @@ public class ProjectFileParserTests : IDisposable
         {
             Directory.Delete(this.TempDir, recursive: true);
         }
+
+        GC.SuppressFinalize(this);
     }
 
     #endregion
@@ -44,15 +46,6 @@ public class ProjectFileParserTests : IDisposable
     private string WriteCsproj(string fileName, string content)
     {
         string path = Path.Combine(this.TempDir, fileName);
-        File.WriteAllText(path, content);
-        return path;
-    }
-
-    private string WriteCsprojInSubdir(string subdir, string fileName, string content)
-    {
-        string dir = Path.Combine(this.TempDir, subdir);
-        Directory.CreateDirectory(dir);
-        string path = Path.Combine(dir, fileName);
         File.WriteAllText(path, content);
         return path;
     }

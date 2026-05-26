@@ -1,3 +1,4 @@
+﻿using System.Globalization;
 using NugetAudit.Cli.Output;
 using NugetAudit.Core;
 using NugetAudit.Core.Models;
@@ -100,7 +101,7 @@ internal static class AuditCommand
             verboseOption,
         };
 
-        command.SetAction(parseResult =>
+        command.SetAction(async (parseResult, ct) =>
         {
             string path = parseResult.GetValue(pathOption) ?? ".";
             bool showAll = parseResult.GetValue(allOption);
@@ -119,9 +120,9 @@ internal static class AuditCommand
                 return;
             }
 
-            int exitCode = RunAuditAsync(
+            int exitCode = await RunAuditAsync(
                 path, showAll, packageList, includeExisting, check, format, outputFile, trustConfigPath, verbose,
-                CancellationToken.None).GetAwaiter().GetResult();
+                ct);
 
             Environment.ExitCode = exitCode;
         });
@@ -205,12 +206,12 @@ internal static class AuditCommand
         }
         catch (System.Text.Json.JsonException)
         {
-            AnsiConsole.MarkupLine("[red]Error: The trust config path does not point to a valid JSON file — make sure you selected TrustConfig.json, not a project or solution file.[/]");
+            AnsiConsole.MarkupLine("[red]Error: TrustConfig.json contains invalid JSON -- not a .sln or .csproj file.[/]");
             return 1;
         }
         catch (UnauthorizedAccessException)
         {
-            AnsiConsole.MarkupLine("[red]Error: Access to the specified file was denied — check file permissions.[/]");
+            AnsiConsole.MarkupLine("[red]Error: Access to the specified file was denied  -- check file permissions.[/]");
             return 1;
         }
         catch (IOException ex)
@@ -296,7 +297,7 @@ internal static class AuditCommand
             if (suppressedTransitiveCount > 0)
             {
                 AnsiConsole.MarkupLine(
-                    $"[grey]{suppressedTransitiveCount} more transitive package(s) from owners already listed — use [bold]--verbose[/] for full list.[/]");
+                    $"[grey]{suppressedTransitiveCount} more transitive package(s) from owners already listed  -- use [bold]--verbose[/] for full list.[/]");
             }
 
             Console.WriteLine();
@@ -337,9 +338,22 @@ internal static class AuditCommand
     /// </summary>
     private static void RenderSponsorNudge()
     {
-        if (Console.IsOutputRedirected) return;
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NUGET_AUDIT_NO_SPONSOR"))) return;
-        if (Random.Shared.NextDouble() >= 0.20) return;
+        if (Console.IsOutputRedirected)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NUGET_AUDIT_NO_SPONSOR")))
+        {
+            return;
+        }
+
+#pragma warning disable CA5394 // Random is intentional  -- non-security use (sponsor prompt display probability)
+        if (Random.Shared.NextDouble() >= 0.20)
+#pragma warning restore CA5394
+        {
+            return;
+        }
 
         Console.WriteLine();
         AnsiConsole.MarkupLine("[grey]nuget-audit is free. If it's useful, consider sponsoring: https://www.nuget.org/packages/nuget-audit  (set NUGET_AUDIT_NO_SPONSOR=1 to disable)[/]");
@@ -372,7 +386,7 @@ internal static class AuditCommand
 
         foreach (var group in groups)
         {
-            // Always show packages with exec content, deprecation, or vulnerabilities —
+            // Always show packages with exec content, deprecation, or vulnerabilities  --
             // each is independently actionable regardless of the per-owner limit.
             var alwaysShow = group
                 .Where(p => p.ExecutableContent?.Length > 0 || p.IsDeprecated || p.HasVulnerabilities)
@@ -440,7 +454,7 @@ internal static class AuditCommand
         AnsiConsole.MarkupLine(
             $"[{vulnColor}]Packages with vulnerabilities: {vulnerable}[/]");
 
-        // Advisory conditions — setup gaps that undermine the zero-trust workflow.
+        // Advisory conditions  -- setup gaps that undermine the zero-trust workflow.
         bool hasLockAdvisory = result.LockFileStatus is not LockFileStatus.LockedAndEnforced;
         bool hasPsmAdvisory = result.PsmStatus is PackageSourceMappingStatus.NotConfigured;
         bool hasAdvisoryIssue = hasLockAdvisory || hasPsmAdvisory;
@@ -452,7 +466,7 @@ internal static class AuditCommand
 
         if (result.LockFileStatus is LockFileStatus.NoLockFile)
         {
-            AnsiConsole.MarkupLine("[red]Security advisory: No packages.lock.json found — lock file enforcement is missing.[/]");
+            AnsiConsole.MarkupLine("[red]Security advisory: No packages.lock.json found  -- lock file enforcement is missing.[/]");
         }
         else if (result.LockFileStatus is LockFileStatus.LockFileNoEnforcement)
         {
@@ -465,7 +479,7 @@ internal static class AuditCommand
 
         if (hasPsmAdvisory)
         {
-            AnsiConsole.MarkupLine("[red]Security advisory: Package Source Mapping is not configured — dependency confusion risk with multiple feeds.[/]");
+            AnsiConsole.MarkupLine("[red]Security advisory: Package Source Mapping is not configured  -- dependency confusion risk with multiple feeds.[/]");
         }
 
         if (result.HasIssues || hasAdvisoryIssue)
@@ -525,6 +539,9 @@ internal static class AuditCommand
                 break;
 
             case "table":
+                TableRenderer.Render(packages);
+                break;
+
             default:
                 TableRenderer.Render(packages);
                 break;
@@ -685,11 +702,11 @@ internal static class AuditCommand
         var nonTrusted = recent.Where(x => !Trusted.Contains(x.pkg.TrustStatus)).ToArray();
         var trusted = recent.Where(x => Trusted.Contains(x.pkg.TrustStatus)).ToArray();
 
-        // Non-trusted entries are always listed individually — these are the actionable signal.
+        // Non-trusted entries are always listed individually  -- these are the actionable signal.
         foreach (var (pkg, days) in nonTrusted)
         {
             string dayLabel = days == 0 ? "today" : days == 1 ? "1 day ago" : $"{days} days ago";
-            string pubDate = pkg.Published!.Value.ToString("yyyy-MM-dd");
+            string pubDate = pkg.Published!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             string trustLabel = TableRenderer.FormatTrustStatus(pkg.TrustStatus);
 
             AnsiConsole.MarkupLine(
@@ -704,7 +721,7 @@ internal static class AuditCommand
                 foreach (var (pkg, days) in trusted)
                 {
                     string dayLabel = days == 0 ? "today" : days == 1 ? "1 day ago" : $"{days} days ago";
-                    string pubDate = pkg.Published!.Value.ToString("yyyy-MM-dd");
+                    string pubDate = pkg.Published!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                     string trustLabel = TableRenderer.FormatTrustStatus(pkg.TrustStatus);
 
                     AnsiConsole.MarkupLine(
@@ -715,13 +732,13 @@ internal static class AuditCommand
             {
                 string also = nonTrusted.Length > 0 ? " also" : "";
                 AnsiConsole.MarkupLine(
-                    $"[grey]  {trusted.Length} verified/trusted package(s){also} published within {threshold} days — use [bold]--verbose[/] for full list.[/]");
+                    $"[grey]  {trusted.Length} verified/trusted package(s){also} published within {threshold} days  -- use [bold]--verbose[/] for full list.[/]");
             }
         }
 
         if (nonTrusted.Length == 0 && trusted.Length > 0 && !verbose)
         {
-            // All recent packages are trusted — no actionable signal to highlight.
+            // All recent packages are trusted  -- no actionable signal to highlight.
         }
         else if (nonTrusted.Length == 0)
         {
@@ -784,7 +801,7 @@ internal static class AuditCommand
 
     /// <summary>
     /// Renders dotnet nuget why commands for transitive packages needing review.
-    /// Always limited to NeedsReview statuses regardless of the display mode — suppressed
+    /// Always limited to NeedsReview statuses regardless of the display mode  -- suppressed
     /// packages and verified/trusted packages are excluded from why-command output.
     /// </summary>
     /// <param name="renderedTransitives">The transitive packages that were actually shown in the table.</param>

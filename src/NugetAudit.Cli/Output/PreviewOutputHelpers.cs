@@ -1,3 +1,4 @@
+using System.Globalization;
 using NugetAudit.Cli.Commands;
 using NugetAudit.Core.Models;
 using Spectre.Console;
@@ -35,7 +36,7 @@ internal static class PreviewOutputHelpers
             foreach (var (pkg, days) in recent)
             {
                 string dayLabel = days == 0 ? "today" : days == 1 ? "1 day ago" : $"{days} days ago";
-                string pubDate = pkg.Published!.Value.ToString("yyyy-MM-dd");
+                string pubDate = pkg.Published!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                 string trustLabel = TableRenderer.FormatTrustStatus(pkg.TrustStatus);
                 string color = CommandHelpers.NeedsReview.Contains(pkg.TrustStatus) ? "red" : "yellow";
 

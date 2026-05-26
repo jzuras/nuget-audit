@@ -6,7 +6,7 @@ namespace NugetAudit.Cli.Tests;
 /// <summary>
 /// Unit tests for <see cref="TrustPackageCommand"/>.
 /// </summary>
-public class TrustPackageCommandTests : IDisposable
+public sealed class TrustPackageCommandTests : IDisposable
 {
     #region Setup / Teardown
 
@@ -34,6 +34,8 @@ public class TrustPackageCommandTests : IDisposable
         {
             Directory.Delete(this.TempDir, recursive: true);
         }
+
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

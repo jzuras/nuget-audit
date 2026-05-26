@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using NugetAudit.Core.Models;
 
@@ -73,7 +74,7 @@ internal static class JsonFormatter
             licenseUrl = pkg.LicenseUrl,
             isDeprecated = pkg.IsDeprecated,
             hasVulnerabilities = pkg.HasVulnerabilities,
-            published = pkg.Published?.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+            published = pkg.Published?.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
             projectUrl = pkg.ProjectUrl,
             executableContent = pkg.ExecutableContent,
         };

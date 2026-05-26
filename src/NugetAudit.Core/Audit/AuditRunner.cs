@@ -15,11 +15,6 @@ public class AuditRunner : IAuditRunner
     #region Properties
 
     /// <summary>
-    /// Gets the runner used to enumerate packages via dotnet list package.
-    /// </summary>
-    private DotnetListPackageRunner PackageRunner { get; }
-
-    /// <summary>
     /// Gets the client used to fetch package metadata from the NuGet Registration API.
     /// </summary>
     private INuGetRegistrationClient RegistrationClient { get; }
@@ -49,21 +44,18 @@ public class AuditRunner : IAuditRunner
     /// <summary>
     /// Initializes a new instance of the <see cref="AuditRunner"/> class.
     /// </summary>
-    /// <param name="packageRunner">Runner that shells out to dotnet list package.</param>
     /// <param name="registrationClient">NuGet Registration API client.</param>
     /// <param name="searchClient">NuGet Search API client.</param>
     /// <param name="trustEvaluator">Trust status evaluator.</param>
     /// <param name="trustConfigLoader">TrustConfig.json loader.</param>
     /// <param name="securityAdvisoryService">Security advisory checker.</param>
     public AuditRunner(
-        DotnetListPackageRunner packageRunner,
         INuGetRegistrationClient registrationClient,
         INuGetSearchClient searchClient,
         ITrustEvaluator trustEvaluator,
         ITrustConfigLoader trustConfigLoader,
         ISecurityAdvisoryService securityAdvisoryService)
     {
-        this.PackageRunner = packageRunner;
         this.RegistrationClient = registrationClient;
         this.SearchClient = searchClient;
         this.TrustEvaluator = trustEvaluator;
@@ -77,7 +69,8 @@ public class AuditRunner : IAuditRunner
         Func<string, Task>? progress,
         CancellationToken ct)
     {
-        await ReportProgress(progress, $"Analyzing packages in: {options.Path}");
+        ArgumentNullException.ThrowIfNull(options);
+        await ReportProgressAsync(progress, $"Analyzing packages in: {options.Path}");
 
         // Pre-flight: if targeting a single .csproj, verify it has been restored.
         // Solutions are skipped — checking every project would require parsing the solution file.
@@ -96,11 +89,11 @@ public class AuditRunner : IAuditRunner
         }
 
         // Enumerate all packages via dotnet list package.
-        await ReportProgress(progress, "Running 'dotnet list package --include-transitive --format json'...");
+        await ReportProgressAsync(progress, "Running 'dotnet list package --include-transitive --format json'...");
 
-        var (packageEntries, totalProjects) = await this.PackageRunner.RunAsync(options.Path, ct);
+        var (packageEntries, totalProjects) = await DotnetListPackageRunner.RunAsync(options.Path, ct);
 
-        await ReportProgress(
+        await ReportProgressAsync(
             progress,
             $"Found {packageEntries.Count} unique packages. Fetching metadata and verification status from NuGet API...");
 
@@ -119,7 +112,7 @@ public class AuditRunner : IAuditRunner
         {
             current++;
 
-            await ReportProgress(
+            await ReportProgressAsync(
                 progress,
                 $"[{current}/{packageEntries.Count}] {entry.Id} {entry.Version}");
 
@@ -138,7 +131,7 @@ public class AuditRunner : IAuditRunner
             packageInfoList.Add(pkgInfo);
         }
 
-        await ReportProgress(
+        await ReportProgressAsync(
             progress,
             $"Successfully retrieved metadata for {packageInfoList.Count} packages.");
 
@@ -162,7 +155,7 @@ public class AuditRunner : IAuditRunner
     /// </summary>
     /// <param name="progress">The optional progress callback.</param>
     /// <param name="message">The progress message.</param>
-    private static async Task ReportProgress(Func<string, Task>? progress, string message)
+    private static async Task ReportProgressAsync(Func<string, Task>? progress, string message)
     {
         if (progress is not null)
         {

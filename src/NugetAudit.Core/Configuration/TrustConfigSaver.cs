@@ -23,6 +23,7 @@ public class TrustConfigSaver : ITrustConfigSaver
     /// <inheritdoc />
     public void Save(TrustConfig config, string path)
     {
+        ArgumentNullException.ThrowIfNull(config);
         var dto = new TrustConfigDto(
             config.TrustedOwners,
             config.TrustedPackages

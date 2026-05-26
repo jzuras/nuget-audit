@@ -7,7 +7,7 @@ namespace NugetAudit.Core.Tests;
 /// Unit tests for <see cref="SecurityAdvisoryService"/> using temporary file-system fixtures.
 /// Each test creates its own temp directory, written as needed, and cleans up on dispose.
 /// </summary>
-public class SecurityAdvisoryServiceTests : IDisposable
+public sealed class SecurityAdvisoryServiceTests : IDisposable
 {
     #region Properties
 
@@ -425,12 +425,12 @@ public class SecurityAdvisoryServiceTests : IDisposable
     [Fact]
     public void GetExecutableContent_PackageIdIsLowercased_FindsDirectory()
     {
-        // Cache stores dirs in lowercase; ID passed in mixed case should still find it.
+        // Cache stores dirs in lowercase; ID passed in all-caps should still find it.
         string pkgDir = Path.Combine(this.TempRoot, "somepackage", "1.0.0");
         Directory.CreateDirectory(Path.Combine(pkgDir, "tools"));
 
-        // Pass "SomePackage" (mixed case) — service should lowercase to "somepackage".
-        var result = this.Sut.GetExecutableContent("SomePackage", "1.0.0", this.TempRoot);
+        // Pass "SOMEPACKAGE" (all caps) — service should lowercase to "somepackage".
+        var result = this.Sut.GetExecutableContent("SOMEPACKAGE", "1.0.0", this.TempRoot);
 
         Assert.NotNull(result);
         Assert.Contains("Tools", result);

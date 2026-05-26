@@ -52,6 +52,7 @@ public record PackageChangedEntry(PackageInfo Package, string OldVersion);
 /// <param name="HasTrustConfig">True when a TrustConfig.json file was found and loaded; false when running with an empty configuration.</param>
 /// <param name="RecentDaysThreshold">Number of days used to flag recently published packages as higher supply chain risk.</param>
 /// <param name="IsApproximate">True when the result was produced by the BFS resolver rather than an exact <c>dotnet restore</c> run. Always true when <c>--fast</c> is used; also true when private-feed packages fall back to BFS.</param>
+/// <param name="IsPrivateToPublicTransition">True when the package being updated moves from a private feed to the public nuget.org feed, indicating a supply-chain risk worth surfacing to the user.</param>
 public record PreviewUpdateResult(
     PackageInfo[] Added,
     PackageChangedEntry[] Changed,
@@ -77,6 +78,7 @@ public record PreviewUpdateResult(
 /// <param name="NeedsReviewCount">Number of packages that need trust review.</param>
 /// <param name="HasTrustConfig">True when a TrustConfig.json file was found and loaded; false when running with an empty configuration.</param>
 /// <param name="RecentDaysThreshold">Number of days used to flag recently published packages as higher supply chain risk.</param>
+/// <param name="ParseWarnings">Optional array of warning messages produced while parsing the assets file or project references; null when no warnings were generated.</param>
 public record PreviewRestoreResult(
     PackageInfo[] Added,
     PackageRef[] DirectRefs,

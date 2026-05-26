@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using NugetAudit.Core;
 using System.Xml.Linq;
 using NugetAudit.Core.Models;
 using NugetAudit.Core.NuGet;
@@ -44,6 +43,7 @@ public class PrivateFeedResolver : IPrivateFeedResolver
         string solutionPath,
         CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(packageId);
         // Collect all private feeds from NuGet.Config files in the directory hierarchy.
         var feeds = CollectPrivateFeeds(solutionPath);
 
@@ -76,7 +76,7 @@ public class PrivateFeedResolver : IPrivateFeedResolver
                 cred = await ResolveCredentialsFromProviderAsync(feed.Url, ct);
             }
 
-            string? regUrl = await GetFeedRegistrationUrlAsync(feed.Url, cred, ct);
+            string? regUrl = await this.GetFeedRegistrationUrlAsync(feed.Url, cred, ct);
 
             if (regUrl is null)
             {
@@ -90,7 +90,7 @@ public class PrivateFeedResolver : IPrivateFeedResolver
             }
 
             // Trial-and-error: probe the registration endpoint for this specific package.
-            bool found = await ProbePackageOnFeedAsync(regUrl, packageId, cred, ct);
+            bool found = await this.ProbePackageOnFeedAsync(regUrl, packageId, cred, ct);
 
             if (found is true)
             {
@@ -167,7 +167,10 @@ public class PrivateFeedResolver : IPrivateFeedResolver
                 }
             }
         }
-        catch { }
+        catch
+        {
+            // Malformed or unreadable NuGet.Config — skip this file; remaining feeds are still collected.
+        }
     }
 
     #endregion
@@ -235,14 +238,14 @@ public class PrivateFeedResolver : IPrivateFeedResolver
             return true;
         }
 
-        if (!pattern.Contains('*'))
+        if (!pattern.Contains('*', StringComparison.Ordinal))
         {
             return string.Equals(packageId, pattern, StringComparison.OrdinalIgnoreCase);
         }
 
         // Convert glob pattern to regex: escape dots, replace * with .*
         string regexPattern = "^"
-            + System.Text.RegularExpressions.Regex.Escape(pattern).Replace(@"\*", ".*")
+            + System.Text.RegularExpressions.Regex.Escape(pattern).Replace(@"\*", ".*", StringComparison.Ordinal)
             + "$";
 
         return System.Text.RegularExpressions.Regex.IsMatch(
@@ -619,7 +622,7 @@ public class PrivateFeedResolver : IPrivateFeedResolver
     {
         /// <summary>Gets or sets the list of service resources.</summary>
         [JsonPropertyName("resources")]
-        public ServiceResource[]? Resources { get; set; }
+        public ServiceResource[]? Resources { get; init; }
     }
 
     /// <summary>
@@ -629,11 +632,11 @@ public class PrivateFeedResolver : IPrivateFeedResolver
     {
         /// <summary>Gets or sets the resource URL.</summary>
         [JsonPropertyName("@id")]
-        public string? Id { get; set; }
+        public string? Id { get; init; }
 
         /// <summary>Gets or sets the resource type (e.g., "RegistrationsBaseUrl/3.6.0").</summary>
         [JsonPropertyName("@type")]
-        public string? Type { get; set; }
+        public string? Type { get; init; }
     }
 
     /// <summary>
@@ -643,11 +646,11 @@ public class PrivateFeedResolver : IPrivateFeedResolver
     {
         /// <summary>Gets or sets the username returned by the credential provider.</summary>
         [JsonPropertyName("Username")]
-        public string? Username { get; set; }
+        public string? Username { get; init; }
 
         /// <summary>Gets or sets the password or bearer token returned by the credential provider.</summary>
         [JsonPropertyName("Password")]
-        public string? Password { get; set; }
+        public string? Password { get; init; }
     }
 
     #endregion

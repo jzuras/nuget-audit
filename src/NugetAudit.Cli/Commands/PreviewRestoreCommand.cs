@@ -1,4 +1,4 @@
-using NugetAudit.Cli.Output;
+﻿using NugetAudit.Cli.Output;
 using NugetAudit.Core;
 using NugetAudit.Core.Models;
 using NugetAudit.Core.Services;
@@ -51,7 +51,7 @@ internal static class PreviewRestoreCommand
             fastOption
         };
 
-        command.SetAction(parseResult =>
+        command.SetAction(async (parseResult, ct) =>
         {
             string path = parseResult.GetValue(pathOption) ?? ".";
             string? framework = parseResult.GetValue(frameworkOption);
@@ -65,9 +65,9 @@ internal static class PreviewRestoreCommand
                 return;
             }
 
-            int exitCode = RunPreviewRestoreAsync(
+            int exitCode = await RunPreviewRestoreAsync(
                 path, framework, trustConfigPath, useFast,
-                CancellationToken.None).GetAwaiter().GetResult();
+                ct);
 
             Environment.ExitCode = exitCode;
         });
@@ -83,6 +83,7 @@ internal static class PreviewRestoreCommand
     /// <param name="path">Path to the solution, project, or directory.</param>
     /// <param name="targetFramework">TFM used for transitive dependency resolution.</param>
     /// <param name="trustConfigPath">Optional path to TrustConfig.json.</param>
+    /// <param name="useFast">When true, use the approximate BFS resolver instead of dotnet restore.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>0 on success, 1 on error.</returns>
     private static async Task<int> RunPreviewRestoreAsync(
@@ -112,12 +113,12 @@ internal static class PreviewRestoreCommand
         }
         catch (System.Text.Json.JsonException)
         {
-            AnsiConsole.MarkupLine("[red]Error: The trust config path does not point to a valid JSON file — make sure you selected TrustConfig.json, not a project or solution file.[/]");
+            AnsiConsole.MarkupLine("[red]Error: TrustConfig.json contains invalid JSON -- not a .sln or .csproj file.[/]");
             return 1;
         }
         catch (UnauthorizedAccessException)
         {
-            AnsiConsole.MarkupLine("[red]Error: Access to the specified file was denied — check file permissions.[/]");
+            AnsiConsole.MarkupLine("[red]Error: Access to the specified file was denied  -- check file permissions.[/]");
             return 1;
         }
         catch (IOException ex)
@@ -134,12 +135,12 @@ internal static class PreviewRestoreCommand
         Console.WriteLine();
 
         AnsiConsole.MarkupLine(
-            $"[cyan bold]Preview Restore — {result.Added.Length} package(s) in dependency graph[/]");
+            $"[cyan bold]Preview Restore  -- {result.Added.Length} package(s) in dependency graph[/]");
 
         if (result.ParseWarnings is { Length: > 0 })
         {
             AnsiConsole.MarkupLine(
-                $"[yellow]WARNING: {result.ParseWarnings.Length} project file(s) could not be parsed and were skipped — results may be incomplete.[/]");
+                $"[yellow]WARNING: {result.ParseWarnings.Length} project file(s) could not be parsed and were skipped  -- results may be incomplete.[/]");
 
             foreach (string w in result.ParseWarnings)
             {
@@ -187,7 +188,7 @@ internal static class PreviewRestoreCommand
 
         if (result.Added.Length == 0)
         {
-            AnsiConsole.MarkupLine("[white]  (no packages found — check path or project file)[/]");
+            AnsiConsole.MarkupLine("[white]  (no packages found  -- check path or project file)[/]");
         }
         else
         {

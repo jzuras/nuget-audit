@@ -346,7 +346,10 @@ public class ProjectFileParser : IProjectFileParser
 
                     return map;
                 }
-                catch { }
+                catch
+                {
+                    // Malformed Directory.Packages.props — skip this level and continue walking up.
+                }
             }
 
             string? parent = Path.GetDirectoryName(current);

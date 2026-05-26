@@ -17,7 +17,7 @@ public class DotnetListPackageRunnerTests
     private sealed class TempDirectory : IDisposable
     {
         public string FullName { get; } = Directory.CreateTempSubdirectory().FullName;
-        public void Dispose() => Directory.Delete(FullName, recursive: true);
+        public void Dispose() => Directory.Delete(this.FullName, recursive: true);
     }
 
     /// <summary>
@@ -256,8 +256,8 @@ public class DotnetListPackageRunnerTests
         var ex = Assert.Throws<InvalidOperationException>(
             () => DotnetListPackageRunner.ResolveProjectPath(dir.FullName));
 
-        Assert.Contains(".slnx", ex.Message);
-        Assert.Contains("--path", ex.Message);
+        Assert.Contains(".slnx", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("--path", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -270,8 +270,8 @@ public class DotnetListPackageRunnerTests
         var ex = Assert.Throws<InvalidOperationException>(
             () => DotnetListPackageRunner.ResolveProjectPath(dir.FullName));
 
-        Assert.Contains(".sln", ex.Message);
-        Assert.Contains("--path", ex.Message);
+        Assert.Contains(".sln", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("--path", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -284,8 +284,8 @@ public class DotnetListPackageRunnerTests
         var ex = Assert.Throws<InvalidOperationException>(
             () => DotnetListPackageRunner.ResolveProjectPath(dir.FullName));
 
-        Assert.Contains(".csproj", ex.Message);
-        Assert.Contains("--path", ex.Message);
+        Assert.Contains(".csproj", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("--path", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]

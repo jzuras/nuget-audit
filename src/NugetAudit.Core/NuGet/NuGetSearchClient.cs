@@ -1,6 +1,6 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using NugetAudit.Core;
 using NugetAudit.Core.Models;
 using NugetAudit.Core.Services;
 
@@ -98,7 +98,7 @@ public class NuGetSearchClient : INuGetSearchClient
         CancellationToken ct)
     {
         string encodedId = Uri.EscapeDataString(packageId);
-        string url = $"{NuGetSearchClient.SearchQueryUrl}?q=packageid:{encodedId}&take=1&prerelease={prerelease.ToString().ToLowerInvariant()}&semVerLevel=2.0.0";
+        var url = new Uri($"{NuGetSearchClient.SearchQueryUrl}?q=packageid:{encodedId}&take=1&prerelease={prerelease.ToString(CultureInfo.InvariantCulture).ToLowerInvariant()}&semVerLevel=2.0.0");
 
         using var response = await this.HttpClient.GetAsync(url, ct);
         response.EnsureSuccessStatusCode();
@@ -119,7 +119,7 @@ public class NuGetSearchClient : INuGetSearchClient
     {
         /// <summary>Gets or sets the list of search result items.</summary>
         [JsonPropertyName("data")]
-        public SearchApiItem[]? Data { get; set; }
+        public SearchApiItem[]? Data { get; init; }
     }
 
     /// <summary>
@@ -129,23 +129,23 @@ public class NuGetSearchClient : INuGetSearchClient
     {
         /// <summary>Gets or sets the package identifier.</summary>
         [JsonPropertyName("id")]
-        public string? Id { get; set; }
+        public string? Id { get; init; }
 
         /// <summary>Gets or sets the latest version of the package (stable or pre-release, depending on query).</summary>
         [JsonPropertyName("version")]
-        public string? Version { get; set; }
+        public string? Version { get; init; }
 
         /// <summary>Gets or sets whether the package publisher has a verified prefix reservation.</summary>
         [JsonPropertyName("verified")]
-        public bool Verified { get; set; }
+        public bool Verified { get; init; }
 
         /// <summary>Gets or sets the owner account names.</summary>
         [JsonPropertyName("owners")]
-        public string[]? Owners { get; set; }
+        public string[]? Owners { get; init; }
 
         /// <summary>Gets or sets the total download count across all versions.</summary>
         [JsonPropertyName("totalDownloads")]
-        public long TotalDownloads { get; set; }
+        public long TotalDownloads { get; init; }
     }
 
     #endregion

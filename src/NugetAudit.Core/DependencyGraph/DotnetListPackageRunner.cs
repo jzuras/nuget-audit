@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using NugetAudit.Core;
 using NugetAudit.Core.Models;
 
 namespace NugetAudit.Core.DependencyGraph;
@@ -11,7 +10,7 @@ namespace NugetAudit.Core.DependencyGraph;
 /// a deduplicated list of resolved packages with their dependency types.
 /// Direct dependencies take precedence over transitives when the same ID+version appears in both.
 /// </summary>
-public class DotnetListPackageRunner
+public static class DotnetListPackageRunner
 {
     #region Constants
 
@@ -32,7 +31,7 @@ public class DotnetListPackageRunner
     /// <exception cref="InvalidOperationException">
     /// Thrown when <c>dotnet list package</c> exits with a non-zero code.
     /// </exception>
-    public async Task<(IReadOnlyList<PackageListEntry> Packages, int TotalProjects)> RunAsync(
+    public static async Task<(IReadOnlyList<PackageListEntry> Packages, int TotalProjects)> RunAsync(
         string path,
         CancellationToken ct)
     {

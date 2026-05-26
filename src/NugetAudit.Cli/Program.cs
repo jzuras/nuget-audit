@@ -4,11 +4,13 @@ using NugetAudit.Cli.Commands;
 using NugetAudit.Cli;
 #endif
 
+namespace NugetAudit.Cli;
+
 /// <summary>
 /// Entry point for the nuget-audit dotnet global tool.
 /// Branches between headless CLI mode and Blazor Server GUI mode based on the invocation style.
 /// </summary>
-public class Program
+internal static class Program
 {
     /// <summary>
     /// Main entry point. Dispatches to the Blazor GUI when invoked with --ui,
@@ -51,11 +53,11 @@ public class Program
         // messages and show only the help output — the errors are noise for the user.
         if (parseResult.Errors.Count > 0 && parseResult.CommandResult.Command == rootCommand)
         {
-            rootCommand.Parse(["--help"]).Invoke();
+            await rootCommand.Parse(["--help"]).InvokeAsync();
             return 0;
         }
 
-        parseResult.Invoke();
+        await parseResult.InvokeAsync();
         return Environment.ExitCode;
     }
 

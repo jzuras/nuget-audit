@@ -12,6 +12,8 @@ public class TrustEvaluator : ITrustEvaluator
     /// <inheritdoc />
     public TrustStatus Evaluate(PackageRegistrationData data, SearchResult? search, TrustConfig config)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(config);
         if (search is null)
         {
             // Search API returned no result — fall back to TrustedPackages list check.

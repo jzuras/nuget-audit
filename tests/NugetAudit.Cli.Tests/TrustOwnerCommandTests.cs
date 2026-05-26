@@ -6,7 +6,7 @@ namespace NugetAudit.Cli.Tests;
 /// <summary>
 /// Unit tests for <see cref="TrustOwnerCommand"/>.
 /// </summary>
-public class TrustOwnerCommandTests : IDisposable
+public sealed class TrustOwnerCommandTests : IDisposable
 {
     #region Setup / Teardown
 
@@ -34,6 +34,8 @@ public class TrustOwnerCommandTests : IDisposable
         {
             Directory.Delete(this.TempDir, recursive: true);
         }
+
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

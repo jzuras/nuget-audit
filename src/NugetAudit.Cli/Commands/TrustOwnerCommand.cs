@@ -1,4 +1,4 @@
-using NugetAudit.Core.Configuration;
+﻿using NugetAudit.Core.Configuration;
 using NugetAudit.Core.Models;
 using Spectre.Console;
 using System.CommandLine;
@@ -99,7 +99,7 @@ internal static class TrustOwnerCommand
 
         if (config.TrustedOwners.Any(o => string.Equals(o, owner, StringComparison.OrdinalIgnoreCase)))
         {
-            AnsiConsole.MarkupLine($"[yellow]'{Markup.Escape(owner)}' is already in trustedOwners — no change made.[/]");
+            AnsiConsole.MarkupLine($"[yellow]'{Markup.Escape(owner)}' is already in trustedOwners  -- no change made.[/]");
             return 0;
         }
 

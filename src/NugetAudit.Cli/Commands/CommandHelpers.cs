@@ -20,12 +20,6 @@ internal static class CommandHelpers
 
 
     /// <summary>
-    /// Returns true when a path value contains a quote character, which indicates the
-    /// Windows trailing-backslash quoting problem ("C:\path\" escapes the closing quote).
-    /// </summary>
-    /// <param name="path">The path string to inspect; null returns false.</param>
-    /// <returns><see langword="true"/> when <paramref name="path"/> contains a double-quote character.</returns>
-    /// <summary>
     /// Resolves the full path to TrustConfig.json.
     /// Prefers an explicit --trust-config value; falls back to deriving from --path.
     /// </summary>
@@ -57,8 +51,14 @@ internal static class CommandHelpers
         return Path.Combine(fullPath, "TrustConfig.json");
     }
 
+    /// <summary>
+    /// Returns true when a path value contains a quote character, which indicates the
+    /// Windows trailing-backslash quoting problem ("C:\path\" escapes the closing quote).
+    /// </summary>
+    /// <param name="path">The path string to inspect; null returns false.</param>
+    /// <returns><see langword="true"/> when <paramref name="path"/> contains a double-quote character.</returns>
     internal static bool HasQuotedTrailingBackslash(string? path) =>
-        path is not null && path.Contains('"');
+        path is not null && path.Contains('"', StringComparison.Ordinal);
 
     /// <summary>
     /// Renders the error message for the Windows trailing-backslash quoting problem.

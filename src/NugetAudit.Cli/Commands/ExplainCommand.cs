@@ -1,4 +1,4 @@
-using Spectre.Console;
+﻿using Spectre.Console;
 using System.CommandLine;
 
 namespace NugetAudit.Cli.Commands;
@@ -67,7 +67,7 @@ internal static class ExplainCommand
     private static int ShowTopicList()
     {
         Console.WriteLine();
-        AnsiConsole.MarkupLine("[cyan bold]nuget-audit explain — available topics[/]");
+        AnsiConsole.MarkupLine("[cyan bold]nuget-audit explain  -- available topics[/]");
         Console.WriteLine();
         AnsiConsole.MarkupLine("[white]  lock-files[/]    [grey]Lock file enforcement and RestoreLockedMode[/]");
         AnsiConsole.MarkupLine("[white]  psm[/]           [grey]Package Source Mapping and dependency confusion[/]");
@@ -105,7 +105,7 @@ internal static class ExplainCommand
         AnsiConsole.MarkupLine("[white]Role in the zero-trust workflow:[/]");
         AnsiConsole.MarkupLine("[grey]  The zero-trust workflow audits packages before they are used. But if dotnet[/]");
         AnsiConsole.MarkupLine("[grey]  restore can pull in different versions between runs, an audit is only a[/]");
-        AnsiConsole.MarkupLine("[grey]  snapshot — not a guarantee. Lock file enforcement makes restores[/]");
+        AnsiConsole.MarkupLine("[grey]  snapshot  -- not a guarantee. Lock file enforcement makes restores[/]");
         AnsiConsole.MarkupLine("[grey]  deterministic, so the packages you audited are the packages you build with.[/]");
         Console.WriteLine();
         AnsiConsole.MarkupLine("[white]What packages.lock.json does:[/]");
@@ -114,7 +114,7 @@ internal static class ExplainCommand
         Console.WriteLine();
         AnsiConsole.MarkupLine("[white]What RestorePackagesWithLockFile=true does:[/]");
         AnsiConsole.MarkupLine("[grey]  Tells NuGet to generate packages.lock.json and use it on every restore.[/]");
-        AnsiConsole.MarkupLine("[grey]  Without this, no lock file is created — even if RestoreLockedMode is set.[/]");
+        AnsiConsole.MarkupLine("[grey]  Without this, no lock file is created  -- even if RestoreLockedMode is set.[/]");
         Console.WriteLine();
         AnsiConsole.MarkupLine("[white]What RestoreLockedMode=true does:[/]");
         AnsiConsole.MarkupLine("[grey]  Tells dotnet restore to fail if the lock file is out of date rather than[/]");
@@ -147,7 +147,7 @@ internal static class ExplainCommand
         AnsiConsole.MarkupLine("[white]Role in the zero-trust workflow:[/]");
         AnsiConsole.MarkupLine("[grey]  nuget-audit audits packages against nuget.org. But if NuGet can resolve a[/]");
         AnsiConsole.MarkupLine("[grey]  package from any configured feed, an attacker can publish a malicious package[/]");
-        AnsiConsole.MarkupLine("[grey]  with the same name as one of your private packages — and NuGet may pick it[/]");
+        AnsiConsole.MarkupLine("[grey]  with the same name as one of your private packages  -- and NuGet may pick it[/]");
         AnsiConsole.MarkupLine("[grey]  up from nuget.org instead of your private feed. This is a dependency[/]");
         AnsiConsole.MarkupLine("[grey]  confusion attack. Package Source Mapping prevents it by binding each package[/]");
         AnsiConsole.MarkupLine("[grey]  ID to the feed it is allowed to come from.[/]");
@@ -180,19 +180,19 @@ internal static class ExplainCommand
         Console.WriteLine();
         AnsiConsole.MarkupLine("[white]Role in the zero-trust workflow:[/]");
         AnsiConsole.MarkupLine("[grey]  The zero-trust workflow is about knowing what you are running. Most NuGet[/]");
-        AnsiConsole.MarkupLine("[grey]  packages are passive libraries — they run only when your code calls them.[/]");
+        AnsiConsole.MarkupLine("[grey]  packages are passive libraries  -- they run only when your code calls them.[/]");
         AnsiConsole.MarkupLine("[grey]  Packages with executable content are different: they run automatically[/]");
         AnsiConsole.MarkupLine("[grey]  during your build, independent of your code. This expands the trust surface[/]");
         AnsiConsole.MarkupLine("[grey]  significantly and warrants extra scrutiny.[/]");
         Console.WriteLine();
         AnsiConsole.MarkupLine("[white]Types of executable content:[/]");
-        AnsiConsole.MarkupLine("[grey]  MSBld  MSBuild .targets/.props files — run during build with full access[/]");
+        AnsiConsole.MarkupLine("[grey]  MSBld  MSBuild .targets/.props files  -- run during build with full access[/]");
         AnsiConsole.MarkupLine("[grey]         to your source tree, environment variables, and network.[/]");
-        AnsiConsole.MarkupLine("[grey]  Alyzr  Roslyn analyzers — run inside the compiler during every build.[/]");
+        AnsiConsole.MarkupLine("[grey]  Alyzr  Roslyn analyzers  -- run inside the compiler during every build.[/]");
         AnsiConsole.MarkupLine("[grey]  Tools  .NET CLI tools bundled with the package.[/]");
         Console.WriteLine();
         AnsiConsole.MarkupLine("[white]What to do when you see this flag:[/]");
-        AnsiConsole.MarkupLine("[grey]  Executable content is not inherently malicious — most build tooling packages[/]");
+        AnsiConsole.MarkupLine("[grey]  Executable content is not inherently malicious  -- most build tooling packages[/]");
         AnsiConsole.MarkupLine("[grey]  legitimately include it. But a compromised package with exec content has[/]");
         AnsiConsole.MarkupLine("[grey]  code execution during your build. Treat these packages with extra care:[/]");
         AnsiConsole.MarkupLine("[grey]  verify the trust status, confirm the publisher, and consider whether the[/]");

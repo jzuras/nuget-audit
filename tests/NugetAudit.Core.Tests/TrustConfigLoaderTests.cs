@@ -6,7 +6,7 @@ namespace NugetAudit.Core.Tests;
 /// <summary>
 /// Unit tests for <see cref="TrustConfigLoader"/>.
 /// </summary>
-public class TrustConfigLoaderTests : IDisposable
+public sealed class TrustConfigLoaderTests : IDisposable
 {
     #region Setup / Teardown
 
@@ -34,6 +34,8 @@ public class TrustConfigLoaderTests : IDisposable
         {
             Directory.Delete(this.TempDir, recursive: true);
         }
+
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

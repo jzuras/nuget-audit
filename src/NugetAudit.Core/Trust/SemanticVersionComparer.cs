@@ -23,6 +23,8 @@ public static class SemanticVersionComparer
     /// </returns>
     public static int Compare(string a, string b)
     {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
         try
         {
             string numericA = StripPreReleaseSuffix(a);

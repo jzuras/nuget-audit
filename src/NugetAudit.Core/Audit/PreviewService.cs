@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Net.Http;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using NuGet.Versioning;
@@ -30,18 +30,13 @@ public class PreviewService : IPreviewService
 
     /// <summary>
     /// Shared <see cref="HttpClient"/> used only for the nuget.org package-existence check in
-    /// <see cref="IsOnNuGetOrgAsync"/>. Kept as a static singleton to avoid socket exhaustion.
+    /// <c>IsOnNuGetOrgAsync</c>. Kept as a static singleton to avoid socket exhaustion.
     /// </summary>
     private static HttpClient NuGetOrgHttpClient { get; } = new() { Timeout = TimeSpan.FromSeconds(5) };
 
     #endregion
 
     #region Properties
-
-    /// <summary>
-    /// Gets the runner used to enumerate the current restore graph from dotnet list package.
-    /// </summary>
-    private DotnetListPackageRunner PackageRunner { get; }
 
     /// <summary>
     /// Gets the NuGet Registration API client used for version checks and BFS dependency fetching.
@@ -83,7 +78,6 @@ public class PreviewService : IPreviewService
     /// <summary>
     /// Initializes a new instance of the <see cref="PreviewService"/> class.
     /// </summary>
-    /// <param name="packageRunner">Runner that shells out to dotnet list package.</param>
     /// <param name="registrationClient">NuGet Registration API client.</param>
     /// <param name="searchClient">NuGet Search API client.</param>
     /// <param name="trustEvaluator">Trust status evaluator.</param>
@@ -92,7 +86,6 @@ public class PreviewService : IPreviewService
     /// <param name="versionRangeResolver">Version range expression resolver.</param>
     /// <param name="projectFileParser">Project file PackageReference parser.</param>
     public PreviewService(
-        DotnetListPackageRunner packageRunner,
         INuGetRegistrationClient registrationClient,
         INuGetSearchClient searchClient,
         ITrustEvaluator trustEvaluator,
@@ -101,7 +94,6 @@ public class PreviewService : IPreviewService
         IVersionRangeResolver versionRangeResolver,
         IProjectFileParser projectFileParser)
     {
-        this.PackageRunner = packageRunner;
         this.RegistrationClient = registrationClient;
         this.SearchClient = searchClient;
         this.TrustEvaluator = trustEvaluator;
@@ -118,6 +110,7 @@ public class PreviewService : IPreviewService
         PreviewUpdateOptions opts,
         CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(opts);
         var (trustConfig, hasTrustConfig) = this.TrustConfigLoader.LoadOrDefault(
             TrustConfigPathResolver.Resolve(opts.Path, opts.TrustConfigPath));
 
@@ -129,7 +122,7 @@ public class PreviewService : IPreviewService
 
         try
         {
-            (packageEntries, _) = await this.PackageRunner.RunAsync(opts.Path, ct);
+            (packageEntries, _) = await DotnetListPackageRunner.RunAsync(opts.Path, ct);
         }
         catch (InvalidOperationException)
         {
@@ -174,7 +167,6 @@ public class PreviewService : IPreviewService
             if (string.IsNullOrWhiteSpace(opts.NewVersion))
             {
                 return BuildPartialResult(
-                    opts.PackageId,
                     isNewPackage,
                     "VersionRequired");
             }
@@ -186,7 +178,6 @@ public class PreviewService : IPreviewService
             if (feedInfo is null)
             {
                 return BuildPartialResult(
-                    opts.PackageId,
                     isNewPackage,
                     "CredentialsUnavailable");
             }
@@ -229,7 +220,7 @@ public class PreviewService : IPreviewService
 
         if (versionCheck.Outcome == RegistrationOutcome.Error || versionCheck.Data is null)
         {
-            return BuildPartialResult(opts.PackageId, isNewPackage, "VersionRequired");
+            return BuildPartialResult(isNewPackage, "VersionRequired");
         }
 
         // Public package — compute resolved version and build version note.
@@ -339,6 +330,7 @@ public class PreviewService : IPreviewService
         PreviewRestoreOptions opts,
         CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(opts);
         var (trustConfig, hasTrustConfig) = this.TrustConfigLoader.LoadOrDefault(
             TrustConfigPathResolver.Resolve(opts.Path, opts.TrustConfigPath));
 
@@ -456,7 +448,9 @@ public class PreviewService : IPreviewService
     RunDeltaBfsAsync(
         string packageId,
         string newVersion,
+#pragma warning disable CA1859 // IReadOnlyDictionary is intentional — parameter must not mutate the caller's graph
         IReadOnlyDictionary<string, PackageEntry> currentGraph,
+#pragma warning restore CA1859
         FeedInfo? feedInfo,
         string targetFramework,
         CancellationToken ct)
@@ -668,6 +662,7 @@ public class PreviewService : IPreviewService
     /// </summary>
     /// <param name="directRefs">Direct package references parsed from the project file.</param>
     /// <param name="targetFramework">TFM for the synthetic project (auto-detected or specified by the user).</param>
+    /// <param name="nugetConfigPath">Optional path to a NuGet.Config file passed to <c>dotnet restore</c> via <c>--configfile</c>. Null uses the default config resolution.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Tuple of (resolved packages, IsApproximate = false).</returns>
     private static async Task<(List<PackageEntry> Packages, bool IsApproximate)> RunExactRestoreAsync(
@@ -676,7 +671,7 @@ public class PreviewService : IPreviewService
         string? nugetConfigPath,
         CancellationToken ct)
     {
-        string uniqueId = Guid.NewGuid().ToString("N");
+        string uniqueId = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
         string tempProjectDir = Path.Combine(Path.GetTempPath(), $"nuget-audit-{uniqueId}");
         string tempPkgDir = Path.Combine(Path.GetTempPath(), $"nuget-audit-pkg-{uniqueId}");
 
@@ -691,7 +686,7 @@ public class PreviewService : IPreviewService
             // Directory.Build.props stops MSBuild from walking up to parent build files
             // (which may include Directory.Packages.props that enforces CPM).
             string buildPropsPath = Path.Combine(tempProjectDir, "Directory.Build.props");
-            await File.WriteAllTextAsync(buildPropsPath, BuildIsolatedBuildProps(), ct);
+            await File.WriteAllTextAsync(buildPropsPath, PreviewService.IsolatedBuildProps, ct);
 
             await ExecuteDotnetRestoreAsync(csprojPath, tempPkgDir, nugetConfigPath, ct);
 
@@ -719,6 +714,7 @@ public class PreviewService : IPreviewService
     /// <param name="newVersion">The target version.</param>
     /// <param name="currentGraph">The current resolved graph (key = lowercased ID).</param>
     /// <param name="targetFramework">TFM for the temp project.</param>
+    /// <param name="nugetConfigPath">Optional path to a NuGet.Config file passed to <c>dotnet restore</c> via <c>--configfile</c>. Null uses the default config resolution.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Tuple of (Added, Changed, Removed, IsApproximate = false).</returns>
     private static async Task<(
@@ -729,12 +725,14 @@ public class PreviewService : IPreviewService
     RunExactDeltaAsync(
         string packageId,
         string newVersion,
+#pragma warning disable CA1859 // IReadOnlyDictionary is intentional — parameter must not mutate the caller's graph
         IReadOnlyDictionary<string, PackageEntry> currentGraph,
+#pragma warning restore CA1859
         string targetFramework,
         string? nugetConfigPath,
         CancellationToken ct)
     {
-        string uniqueId = Guid.NewGuid().ToString("N");
+        string uniqueId = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
         string tempProjectDir = Path.Combine(Path.GetTempPath(), $"nuget-audit-{uniqueId}");
         string tempPkgDir = Path.Combine(Path.GetTempPath(), $"nuget-audit-pkg-{uniqueId}");
 
@@ -749,7 +747,7 @@ public class PreviewService : IPreviewService
             // Directory.Build.props prevents MSBuild from walking up to parent build files,
             // which may include Directory.Packages.props (CPM) that conflicts with our explicit version.
             string buildPropsPath = Path.Combine(tempProjectDir, "Directory.Build.props");
-            await File.WriteAllTextAsync(buildPropsPath, BuildIsolatedBuildProps(), ct);
+            await File.WriteAllTextAsync(buildPropsPath, PreviewService.IsolatedBuildProps, ct);
 
             await ExecuteDotnetRestoreAsync(csprojPath, tempPkgDir, nugetConfigPath, ct);
 
@@ -810,6 +808,7 @@ public class PreviewService : IPreviewService
     /// </summary>
     /// <param name="path">Path to the solution, project, or directory to restore.</param>
     /// <param name="packagesTempDir">Temp directory that receives downloaded package files.</param>
+    /// <param name="nugetConfigPath">Optional path to a NuGet.Config file passed via <c>--configfile</c>. Null uses the default config resolution.</param>
     /// <param name="ct">Cancellation token.</param>
     private static async Task ExecuteDotnetRestoreAsync(
         string path,
@@ -848,13 +847,15 @@ public class PreviewService : IPreviewService
         var stderrTask = process.StandardError.ReadToEndAsync(ct);
 
         await Task.WhenAll(stdoutTask, stderrTask);
+        string stdout = await stdoutTask;
+        string stderr = await stderrTask;
         await process.WaitForExitAsync(ct);
 
         if (process.ExitCode != 0)
         {
-            string detail = stderrTask.Result.Trim().Length > 0
-                ? stderrTask.Result.Trim()
-                : stdoutTask.Result.Trim();
+            string detail = stderr.Trim().Length > 0
+                ? stderr.Trim()
+                : stdout.Trim();
 
             // NU1101: package not found on any configured source — common when a private feed
             // is missing from NuGet.config or credentials are absent. Rewrite to a clean message
@@ -929,7 +930,7 @@ public class PreviewService : IPreviewService
     /// </summary>
     /// <param name="assetsFilePath">Absolute path to a <c>project.assets.json</c> file.</param>
     /// <returns>List of <see cref="PackageEntry"/> records parsed from the file.</returns>
-    private static IReadOnlyList<PackageEntry> ReadPackagesFromAssetsFile(string assetsFilePath)
+    private static List<PackageEntry> ReadPackagesFromAssetsFile(string assetsFilePath)
     {
         using var doc = JsonDocument.Parse(File.ReadAllText(assetsFilePath));
 
@@ -1018,14 +1019,13 @@ public class PreviewService : IPreviewService
     }
 
     /// <summary>
-    /// Builds the content for a <c>Directory.Build.props</c> file placed in the temp project
+    /// Gets the content for a <c>Directory.Build.props</c> file placed in the temp project
     /// directory. Its presence stops MSBuild from walking up the directory tree to discover
     /// parent <c>Directory.Build.props</c> files, which may include <c>Directory.Packages.props</c>
     /// (CPM) that conflicts with the explicit version specified in the minimal csproj, or a
     /// <c>RestoreLockedMode=true</c> setting that would fail restore without a lock file.
     /// </summary>
-    /// <returns>The Directory.Build.props XML content as a string.</returns>
-    private static string BuildIsolatedBuildProps() =>
+    private static string IsolatedBuildProps { get; } =
         """
         <Project>
           <PropertyGroup>
@@ -1049,7 +1049,10 @@ public class PreviewService : IPreviewService
                 Directory.Delete(path, recursive: true);
             }
         }
-        catch { }
+        catch
+        {
+            // Best-effort cleanup — temp directory deletion failures are non-fatal.
+        }
     }
 
     /// <summary>
@@ -1065,8 +1068,8 @@ public class PreviewService : IPreviewService
     {
         try
         {
-            string url = $"https://api.nuget.org/v3-flatcontainer/" +
-                         $"{Uri.EscapeDataString(packageId.ToLowerInvariant())}/index.json";
+            var url = new Uri($"https://api.nuget.org/v3-flatcontainer/" +
+                              $"{Uri.EscapeDataString(packageId.ToLowerInvariant())}/index.json");
             using var response = await NuGetOrgHttpClient.GetAsync(url, ct);
 
             if (!response.IsSuccessStatusCode)
@@ -1082,15 +1085,8 @@ public class PreviewService : IPreviewService
                 return false;
             }
 
-            foreach (var v in versions.EnumerateArray())
-            {
-                if (string.Equals(v.GetString(), version, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return versions.EnumerateArray()
+                .Any(v => string.Equals(v.GetString(), version, StringComparison.OrdinalIgnoreCase));
         }
         catch
         {
@@ -1230,7 +1226,7 @@ public class PreviewService : IPreviewService
     /// </summary>
     /// <param name="path">The path option value — a .csproj, .sln, .slnx, or directory.</param>
     /// <returns>Deduplicated list of package entries, or empty if no lock files were found.</returns>
-    private static IReadOnlyList<PackageListEntry> ReadFromLockFiles(string path)
+    private static List<PackageListEntry> ReadFromLockFiles(string path)
     {
         string fullPath = Path.GetFullPath(path);
         string searchDir = Directory.Exists(fullPath)
@@ -1297,7 +1293,10 @@ public class PreviewService : IPreviewService
                     }
                 }
             }
-            catch { }
+            catch
+            {
+                // Malformed or unreadable lock file entry — skip it and continue with remaining projects.
+            }
         }
 
         // Merge: direct entries win; add transitives only where no direct entry exists.
@@ -1318,12 +1317,10 @@ public class PreviewService : IPreviewService
     /// Builds a partial <see cref="PreviewUpdateResult"/> for early-return paths where the full
     /// graph cannot be resolved (private feed with no version specified, or no credentials).
     /// </summary>
-    /// <param name="packageId">The target package ID.</param>
     /// <param name="isNewPackage">True if the package is being added; false if being updated.</param>
     /// <param name="reason">The partial result reason: "VersionRequired" or "CredentialsUnavailable".</param>
     /// <returns>A <see cref="PreviewUpdateResult"/> with <c>IsPartialResult = true</c>.</returns>
     private static PreviewUpdateResult BuildPartialResult(
-        string packageId,
         bool isNewPackage,
         string reason)
     {

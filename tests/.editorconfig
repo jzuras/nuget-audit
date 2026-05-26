@@ -1,0 +1,16 @@
+# Analyzer overrides for test projects only.
+# Inherits all rules from the root .editorconfig — only exceptions are listed here.
+
+[*.cs]
+# CA1707: underscores in test method names are a standard convention (e.g. Method_Condition_Expected)
+dotnet_diagnostic.CA1707.severity = none
+
+# CA1515: test classes and fixtures have no public API surface to protect; accessibility is irrelevant
+dotnet_diagnostic.CA1515.severity = none
+
+# CA2000: FakeHttpMessageHandler/HttpClient are passed into objects under test and cannot be
+# disposed at the creation site. Fixing properly requires IDisposable on production types.
+dotnet_diagnostic.CA2000.severity = none
+
+# CS1591: test methods do not require XML doc comments
+dotnet_diagnostic.CS1591.severity = none

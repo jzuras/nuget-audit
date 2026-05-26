@@ -1,4 +1,4 @@
-using NugetAudit.Core.Configuration;
+﻿using NugetAudit.Core.Configuration;
 using NugetAudit.Core.Models;
 using Spectre.Console;
 using System.CommandLine;
@@ -105,7 +105,7 @@ internal static class InitCommand
         // TrustConfig.json
         if (File.Exists(configPath) && !force)
         {
-            AnsiConsole.MarkupLine("[grey]TrustConfig.json already exists — skipped (use --force to overwrite).[/]");
+            AnsiConsole.MarkupLine("[grey]TrustConfig.json already exists  -- skipped (use --force to overwrite).[/]");
         }
         else
         {
@@ -125,7 +125,7 @@ internal static class InitCommand
         // Directory.Build.targets
         if (File.Exists(targetsPath) && !force)
         {
-            AnsiConsole.MarkupLine("[grey]Directory.Build.targets already exists — skipped (use --force to overwrite).[/]");
+            AnsiConsole.MarkupLine("[grey]Directory.Build.targets already exists  -- skipped (use --force to overwrite).[/]");
         }
         else
         {
@@ -172,7 +172,7 @@ internal static class InitCommand
 
         if (wroteConfig)
         {
-            AnsiConsole.MarkupLine($"[white]  {step++}. Edit TrustConfig.json — add your organization's trusted nuget.org account names,[/]");
+            AnsiConsole.MarkupLine($"[white]  {step++}. Edit TrustConfig.json  -- add your organization's trusted nuget.org account names,[/]");
             AnsiConsole.MarkupLine("[grey]       then populate trusted packages:[/]");
             AnsiConsole.MarkupLine($"[grey]       Run: [bold]nuget-audit audit --package-list --path \"{escapedDir}\"[/][/]");
             AnsiConsole.MarkupLine("[grey]       This outputs ready-to-paste entries for each package needing review.[/]");
@@ -184,7 +184,7 @@ internal static class InitCommand
 
         AnsiConsole.MarkupLine($"[white]  {step++}. Add [bold].nuget-audit-ok[/] to .gitignore[/]");
         AnsiConsole.MarkupLine($"[grey]       This is a machine-local sentinel file created by Directory.Build.targets.[/]");
-        AnsiConsole.MarkupLine($"[white]  {step++}. Enable lock file enforcement:[/]");
+        AnsiConsole.MarkupLine($"[white]  {step}. Enable lock file enforcement:[/]");
         AnsiConsole.MarkupLine($"[grey]       Run [bold]nuget-audit explain lock-files[/] for setup steps.[/]");
 
         Console.WriteLine();

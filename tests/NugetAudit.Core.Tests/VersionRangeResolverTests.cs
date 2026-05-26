@@ -17,8 +17,10 @@ public class VersionRangeResolverTests
     /// </summary>
     /// <param name="latestVersion">The version string to return, or null to simulate not found.</param>
     /// <returns>A stub search client instance.</returns>
+#pragma warning disable CA1859 // StubSearchClient is file-local; cannot appear in method signature
     private static INuGetSearchClient StubSearch(string? latestVersion)
         => new StubSearchClient(latestVersion);
+#pragma warning restore CA1859
 
     private static VersionRangeResolver MakeResolver(string? latestVersion)
         => new(StubSearch(latestVersion));

@@ -85,12 +85,18 @@ public class SecurityAdvisoryService : ISecurityAdvisoryService
                 else if (element.Name.LocalName.Equals("add", StringComparison.OrdinalIgnoreCase))
                 {
                     var key = element.Attribute("key")?.Value;
-                    if (key is not null) sources.Add(key);
+                    if (key is not null)
+                    {
+                        sources.Add(key);
+                    }
                 }
                 else if (element.Name.LocalName.Equals("remove", StringComparison.OrdinalIgnoreCase))
                 {
                     var key = element.Attribute("key")?.Value;
-                    if (key is not null) sources.Remove(key);
+                    if (key is not null)
+                    {
+                        sources.Remove(key);
+                    }
                 }
             }
         }
@@ -250,6 +256,7 @@ public class SecurityAdvisoryService : ISecurityAdvisoryService
     /// <inheritdoc />
     public string[]? GetExecutableContent(string packageId, string version, string cachePath)
     {
+        ArgumentNullException.ThrowIfNull(packageId);
         // ID is lowercased; version is NOT (matches NuGet cache layout exactly).
         string pkgPath = Path.Combine(cachePath, packageId.ToLowerInvariant(), version);
 

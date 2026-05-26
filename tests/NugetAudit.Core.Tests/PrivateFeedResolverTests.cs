@@ -10,7 +10,7 @@ namespace NugetAudit.Core.Tests;
 /// to simulate the directory-hierarchy config walk, and a <see cref="FakeHttpMessageHandler"/>
 /// for service-index and probe HTTP calls.
 /// </summary>
-public class PrivateFeedResolverTests : IDisposable
+public sealed class PrivateFeedResolverTests : IDisposable
 {
     #region Setup / Teardown
 
@@ -37,6 +37,8 @@ public class PrivateFeedResolverTests : IDisposable
         {
             Directory.Delete(this.TempDir, recursive: true);
         }
+
+        GC.SuppressFinalize(this);
     }
 
     #endregion

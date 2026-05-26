@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using NugetAudit.Core.Models;
 using Spectre.Console;
@@ -175,19 +176,19 @@ internal static class TableRenderer
         string vuln     = (pkg.HasVulnerabilities ? "Yes" : "No").PadRight(widths[ColVuln]);
 
         var sb = new StringBuilder();
-        sb.Append($"[{rowColor}]{Markup.Escape(type)}[/]");
-        sb.Append($"  [{rowColor}]{Markup.Escape(firstLineId)}[/]");
-        sb.Append($"  [{rowColor}]{Markup.Escape(ver)}[/]");
-        sb.Append($"  [{rowColor}]{Markup.Escape(owners)}[/]");
-        sb.Append($"  [{rowColor}]{Markup.Escape(verified)}[/]");
-        sb.Append($"  [{rowColor}]{Markup.Escape(trust)}[/]");
-        sb.Append($"  [{deprColor}]{Markup.Escape(depr)}[/]");
-        sb.Append($"  [{vulnColor}]{Markup.Escape(vuln)}[/]");
+        sb.Append(CultureInfo.InvariantCulture, $"[{rowColor}]{Markup.Escape(type)}[/]");
+        sb.Append(CultureInfo.InvariantCulture, $"  [{rowColor}]{Markup.Escape(firstLineId)}[/]");
+        sb.Append(CultureInfo.InvariantCulture, $"  [{rowColor}]{Markup.Escape(ver)}[/]");
+        sb.Append(CultureInfo.InvariantCulture, $"  [{rowColor}]{Markup.Escape(owners)}[/]");
+        sb.Append(CultureInfo.InvariantCulture, $"  [{rowColor}]{Markup.Escape(verified)}[/]");
+        sb.Append(CultureInfo.InvariantCulture, $"  [{rowColor}]{Markup.Escape(trust)}[/]");
+        sb.Append(CultureInfo.InvariantCulture, $"  [{deprColor}]{Markup.Escape(depr)}[/]");
+        sb.Append(CultureInfo.InvariantCulture, $"  [{vulnColor}]{Markup.Escape(vuln)}[/]");
 
         if (hasExecData is true)
         {
             string exec = ExecLabel(pkg).PadRight(widths[ColExec]);
-            sb.Append($"  [{rowColor}]{Markup.Escape(exec)}[/]");
+            sb.Append(CultureInfo.InvariantCulture, $"  [{rowColor}]{Markup.Escape(exec)}[/]");
         }
 
         AnsiConsole.MarkupLine(sb.ToString());

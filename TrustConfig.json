@@ -3,13 +3,10 @@
     "Microsoft",
     "dotnetfoundation",
     "aspnet",
-    "xunit"
+    "xunit",
+    "SonarSource"
   ],
   "trustedPackages": [
-    {
-      "id": "EXAMPLE.PACKAGE",
-      "version": "1.0.0"
-    },
     {
       "id": "Spectre.Console",
       "version": "0.55.2"

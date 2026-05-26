@@ -1,0 +1,53 @@
+# Analyzer overrides for the nuget-audit project.
+# Inherits global rules from C:\Users\Jim\source\.editorconfig when present (developer machines).
+# Build-critical rules are duplicated here so the public gh-repo build is self-contained.
+
+[*.cs]
+# Remove unnecessary using directives (IDE0005).
+# Requires GenerateDocumentationFile=true in Directory.Build.props to activate at build time.
+dotnet_diagnostic.IDE0005.severity = error
+
+# Duplicate of global using — belt-and-suspenders alongside IDE0005 (CS8933)
+dotnet_diagnostic.CS8933.severity = error
+
+# S1125: "Remove unnecessary boolean literal" — contradicts csharp_style_prefer_pattern_matching = true:error
+# which requires `is true` / `is false` style. Every case S1125 would legitimately catch
+# (== true / == false) is already a build error via IDE0019.
+dotnet_diagnostic.S1125.severity = none
+
+# CA2007: ConfigureAwait(false) suppressed � this is a CLI tool with no synchronization context.
+dotnet_diagnostic.CA2007.severity = none
+
+# CA1308: ToLowerInvariant is intentional — NuGet uses lowercase for package IDs,
+# cache paths, and working graph keys. ToUpperInvariant would break lookups.
+dotnet_diagnostic.CA1308.severity = none
+
+# CA1031: Broad catches are intentional — this is a CLI tool that processes external
+# data (project files, XML, HTTP responses) and must be robust against unexpected failures.
+dotnet_diagnostic.CA1031.severity = none
+
+# CA1819: Array properties are intentional on JSON DTOs — all instances mirror external
+# JSON schemas (NuGet v3 APIs, TrustConfig.json) required for System.Text.Json deserialization.
+dotnet_diagnostic.CA1819.severity = none
+
+# CA1054/CA1055/CA1056: URI parameters, return types, and properties kept as string — all
+# instances are DTOs populated from external JSON APIs or config files. Wide refactor for
+# marginal benefit in an application (not a public library).
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1055.severity = none
+dotnet_diagnostic.CA1056.severity = none
+
+# S3267: "Simplify loop with LINQ" — explicit loops are preferred over LINQ chains where
+# the loop body is clearer. Idiomatic single-method cases (Any, Where) are fixed manually;
+# the rule is suppressed to avoid enforcing it on loops that are intentionally more readable.
+dotnet_diagnostic.S3267.severity = none
+
+# S3358: "Nested ternaries are hard to read" — two-level ternaries used for simple three-way
+# assignments are clearer than an equivalent 11-line if/else block. Fixed in genuinely complex
+# cases; the rule is suppressed to avoid enforcing it where the ternary form is more readable.
+dotnet_diagnostic.S3358.severity = none
+
+# SDK-generated files in obj/ contain `using System;` which triggers CS8933 against implicit global usings.
+# These are not our files — suppress the false positive for all generated intermediate output paths.
+[**/obj/**/*.cs]
+dotnet_diagnostic.CS8933.severity = none

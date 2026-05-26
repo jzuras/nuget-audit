@@ -1,3 +1,4 @@
+using System.Globalization;
 using NugetAudit.Core.Models;
 
 namespace NugetAudit.Cli.Output;
@@ -67,7 +68,7 @@ internal static class CsvFormatter
     private static string ToCsvLine(PackageInfo pkg)
     {
         string owners = string.Join("|", pkg.Owners);
-        string published = pkg.Published?.ToString("yyyy-MM-ddTHH:mm:ssZ") ?? string.Empty;
+        string published = pkg.Published?.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture) ?? string.Empty;
 
         string executableContent = pkg.ExecutableContent is null
             ? "?"
@@ -99,9 +100,9 @@ internal static class CsvFormatter
     /// <returns>The CSV-safe value.</returns>
     private static string CsvEscape(string value)
     {
-        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+        if (value.Contains(',', StringComparison.Ordinal) || value.Contains('"', StringComparison.Ordinal) || value.Contains('\n', StringComparison.Ordinal))
         {
-            return $"\"{value.Replace("\"", "\"\"")}\"";
+            return $"\"{value.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
         }
 
         return value;

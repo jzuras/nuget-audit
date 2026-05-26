@@ -1,5 +1,4 @@
 using NugetAudit.Core.Models;
-using NugetAudit.Core.Security;
 using NugetAudit.Core.Services;
 
 namespace NugetAudit.Core.Audit;
@@ -89,6 +88,9 @@ internal static class PackageInfoBuilder
                 break;
 
             case RegistrationOutcome.Error:
+                trustStatus = TrustStatus.Untrusted;
+                break;
+
             default:
                 trustStatus = TrustStatus.Untrusted;
                 break;

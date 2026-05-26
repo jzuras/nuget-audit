@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using Spectre.Console;
 
 namespace NugetAudit.Cli.Commands;
@@ -33,7 +33,7 @@ internal static class GuideCommand
         AnsiConsole.MarkupLine("[white]1. [bold]nuget-audit init --path <dir>[/][/]");
         AnsiConsole.MarkupLine("[grey]     Creates TrustConfig.json and Directory.Build.targets for the zero-trust workflow,[/]");
         AnsiConsole.MarkupLine("[grey]     then prints next steps.[/]");
-        AnsiConsole.MarkupLine("[grey]     Follow those steps — they cover trust config, audit, and lock file setup.[/]");
+        AnsiConsole.MarkupLine("[grey]     Follow those steps  -- they cover trust config, audit, and lock file setup.[/]");
         Console.WriteLine();
         AnsiConsole.MarkupLine("[cyan bold]=== Ongoing use ===[/]");
         Console.WriteLine();
@@ -42,7 +42,7 @@ internal static class GuideCommand
         AnsiConsole.MarkupLine("[white]3. Before updating a package:[/]");
         AnsiConsole.MarkupLine("[white]     [bold]nuget-audit preview-update <id> --version <ver> --path <dir>[/][/]");
         AnsiConsole.MarkupLine("[white]4. Before restoring a fresh clone[/]");
-        AnsiConsole.MarkupLine("[grey]     (clone with git CLI, not VS — VS restores automatically):[/]");
+        AnsiConsole.MarkupLine("[grey]     (clone with git CLI, not VS  -- VS restores automatically):[/]");
         AnsiConsole.MarkupLine("[white]     [bold]nuget-audit preview-restore --path <dir>[/][/]");
         Console.WriteLine();
         AnsiConsole.MarkupLine("[grey]Run [bold]nuget-audit <command> --help[/] for all options.[/]");

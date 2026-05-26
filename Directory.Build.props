@@ -1,5 +1,10 @@
 <Project>
   <PropertyGroup>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <!-- Required to activate IDE0005 (remove unnecessary usings) at build time -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    
     <!-- Enforce lock file on all machines, not just CI.
          To update packages intentionally: dotnet restore with the force-evaluate flag -->
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
@@ -8,4 +13,9 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />
+    <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
+  </ItemGroup>
 </Project>

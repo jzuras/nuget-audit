@@ -44,7 +44,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISecurityAdvisoryService, SecurityAdvisoryService>();
 
         // Audit orchestration.
-        services.AddSingleton<DotnetListPackageRunner>();
         services.AddSingleton<IAuditRunner, AuditRunner>();
 
         // Preview flows (Phase 3).
