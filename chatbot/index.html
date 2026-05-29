@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>nuget-audit Assistant (Local AI)</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+    #status { margin-bottom: 1rem; padding: 0.5rem; border-radius: 4px; }
+    .ok   { background: #d1e7dd; color: #0a3622; }
+    .warn { background: #fff3cd; color: #664d03; }
+    .err  { background: #f8d7da; color: #58151c; }
+    #progress-container { display: none; margin-bottom: 0.75rem; }
+    #progress-label { font-size: 0.85rem; color: #555; margin-bottom: 0.25rem; }
+    progress { width: 100%; height: 18px; border-radius: 4px; }
+    #doc-indicator { display: none; font-size: 0.8rem; color: #555; font-style: italic;
+                     margin-bottom: 0.4rem; }
+    #chat { border: 1px solid #ccc; border-radius: 6px; height: 350px; overflow-y: auto;
+            padding: 0.75rem; margin-bottom: 0.75rem; background: #fafafa; }
+    .msg { margin-bottom: 0.6rem; }
+    .msg.user   { font-weight: bold; }
+    .msg.ai     { color: #333; white-space: pre-wrap; }
+    .msg.system { color: #aaa; font-style: italic; font-size: 0.8rem; }
+    #input-row { display: flex; gap: 0.5rem; }
+    #prompt { flex: 1; padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; border-radius: 4px; border: none;
+             background: #0d6efd; color: #fff; }
+    button:disabled { background: #aaa !important; cursor: not-allowed; }
+    #stop-btn { background: #dc3545; }
+    #init-area { margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h2>nuget-audit Assistant</h2>
+  <div id="status" class="warn">Local AI not initialized.</div>
+
+  <div id="progress-container">
+    <div id="progress-label">Downloading model...</div>
+    <progress id="progress-bar" value="0" max="100"></progress>
+  </div>
+
+  <div id="init-area">
+    <button id="init-btn" onclick="initSession()">Initialize</button>
+  </div>
+
+  <div id="doc-indicator"></div>
+  <div id="chat"></div>
+  <div id="input-row">
+    <input id="prompt" type="text" placeholder="Ask a question about nuget-audit..." disabled
+           onkeydown="if(event.key==='Enter')sendPrompt()">
+    <button id="send-btn" onclick="sendPrompt()" disabled>Send</button>
+    <button id="stop-btn" onclick="stopStreaming()" disabled>Stop</button>
+    <button id="new-btn" onclick="newConversation()" disabled>New Conversation</button>
+  </div>
+
+  <script>
+    // ---------------------------------------------------------------------------
+    // Doc manifest — each entry maps to one page/file the AI can reference.
+    // keywords: comma-separated terms used to match user questions to docs.
+    // ---------------------------------------------------------------------------
+    const BASE = 'https://jzuras.github.io/nuget-audit/';
+    const RAW  = 'https://raw.githubusercontent.com/jzuras/nuget-audit/main/';
+
+    const DOC_MANIFEST = [
+      {
+        id: 'readme',
+        title: 'README (full reference)',
+        url: RAW + 'README.md',
+        keywords: 'install, installation, getting started, overview, what is, commands, audit, trust status, verified, untrusted, output, configuration, nuget-audit, options, flags, exit code, csv, json, format, version changed, private feed, trusted package',
+        isMarkdown: true
+      },
+      {
+        id: 'guide',
+        title: 'User Guide',
+        url: BASE + 'guide/',
+        keywords: 'guide, how to use, how to run, usage, audit command, options, flags, output, trust labels, table, columns, run',
+        isMarkdown: false
+      },
+      {
+        id: 'zero-trust',
+        title: 'Zero-Trust NuGet Workflow',
+        url: BASE + 'zero-trust/',
+        keywords: 'zero trust, zero-trust, nuget config, trusted sources, lock file, lock files, package signing, signed, allowedVersionRange, trustedSigners, packageSourceMapping',
+        isMarkdown: false
+      },
+      {
+        id: 'policy',
+        title: 'Policy Enforcement Guide',
+        url: BASE + 'policy/',
+        keywords: 'policy, enforce, enforcement, ci, pipeline, fail, block, fail on untrusted, trust policy, exit code, build gate, github actions',
+        isMarkdown: false
+      },
+      {
+        id: 'dependabot',
+        title: 'Dependabot Integration',
+        url: BASE + 'dependabot/',
+        keywords: 'dependabot, github, automated updates, pull request, pr, automatic, bot, dependency updates',
+        isMarkdown: false
+      },
+      {
+        id: 'solo-workflow',
+        title: 'Solo Dev Safe-Pull Workflow',
+        url: BASE + 'solo-workflow/',
+        keywords: 'solo, developer, workflow, safe pull, git pull, pulling, personal project, individual',
+        isMarkdown: false
+      },
+      {
+        id: 'home',
+        title: 'Home Page',
+        url: BASE,
+        keywords: 'home, introduction, supply chain, features, about, security',
+        isMarkdown: false
+      }
+    ];
+
+    // Cache fetched doc content so we don't re-fetch on every question
+    const docCache = {};
+
+    const lm = window.LanguageModel ?? window.ai?.languageModel ?? null;
+
+    const SESSION_PROMPT = 'You are a helpful assistant for nuget-audit, a .NET global tool that audits NuGet package security and trust. Answer questions concisely and accurately based on the documentation provided with each question. If the answer is not in the provided documentation, say so.';
+
+    let session = null;
+    let currentAbort = null;
+
+    function stopStreaming() {
+      if (currentAbort) {
+        currentAbort.abort();
+        currentAbort = null;
+      }
+      document.getElementById('stop-btn').disabled = true;
+    }
+
+    async function createSession() {
+      return lm.create({ systemPrompt: SESSION_PROMPT });
+    }
+
+    async function newConversation() {
+      if (currentAbort) { currentAbort.abort(); currentAbort = null; }
+      document.getElementById('new-btn').disabled = true;
+      document.getElementById('send-btn').disabled = true;
+      if (session) { session.destroy(); }
+      session = await createSession();
+      document.getElementById('chat').innerHTML = '';
+      document.getElementById('doc-indicator').style.display = 'none';
+      document.getElementById('send-btn').disabled = false;
+      document.getElementById('new-btn').disabled = false;
+      document.getElementById('prompt').focus();
+    }
+
+    // ---------------------------------------------------------------------------
+    // UI helpers
+    // ---------------------------------------------------------------------------
+    function log(text, cls = 'system') {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'msg ' + cls;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function setStatus(text, cls) {
+      const el = document.getElementById('status');
+      el.textContent = text;
+      el.className = cls;
+    }
+
+    function setProgress(loaded, total) {
+      const container = document.getElementById('progress-container');
+      const bar = document.getElementById('progress-bar');
+      const label = document.getElementById('progress-label');
+      container.style.display = 'block';
+      if (total > 0) {
+        const pct = Math.round((loaded / total) * 100);
+        bar.value = pct;
+        bar.max = 100;
+        const mb = n => (n / 1024 / 1024).toFixed(0) + ' MB';
+        label.textContent = `Downloading model: ${mb(loaded)} / ${mb(total)} (${pct}%)`;
+        setStatus(`Model downloading — ${pct}%`, 'warn');
+      } else {
+        bar.removeAttribute('value');
+        label.textContent = 'Downloading model...';
+      }
+    }
+
+    function hideProgress() {
+      document.getElementById('progress-container').style.display = 'none';
+    }
+
+    function setDocIndicator(title) {
+      const el = document.getElementById('doc-indicator');
+      el.textContent = 'Context: ' + title;
+      el.style.display = 'block';
+    }
+
+    // ---------------------------------------------------------------------------
+    // Doc selection — score each doc by keyword hits in the question
+    // ---------------------------------------------------------------------------
+    function pickDoc(question) {
+      const q = question.toLowerCase();
+      let best = DOC_MANIFEST[0]; // default: readme
+      let bestScore = 0;
+      for (const doc of DOC_MANIFEST) {
+        const keywords = doc.keywords.split(', ');
+        const score = keywords.filter(k => q.includes(k.toLowerCase())).length;
+        if (score > bestScore) {
+          bestScore = score;
+          best = doc;
+        }
+      }
+      console.log('Doc selected:', best.id, '(score ' + bestScore + ')');
+      return best;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Doc fetching — strips HTML to plain text; caches results
+    // ---------------------------------------------------------------------------
+    async function fetchDoc(doc) {
+      if (docCache[doc.id]) return docCache[doc.id];
+
+      const response = await fetch(doc.url);
+      if (!response.ok) throw new Error(`Failed to fetch ${doc.url}: ${response.status}`);
+      const raw = await response.text();
+
+      let text;
+      if (doc.isMarkdown) {
+        text = raw;
+      } else {
+        const parser = new DOMParser();
+        const dom = parser.parseFromString(raw, 'text/html');
+        dom.querySelectorAll('script, style, nav, header, footer').forEach(el => el.remove());
+        text = (dom.body.innerText || dom.body.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+      }
+
+      // Truncate to stay within Gemini Nano's context window
+      const MAX_CHARS = 8000;
+      if (text.length > MAX_CHARS) {
+        text = text.slice(0, MAX_CHARS) + '\n\n[content truncated]';
+      }
+
+      docCache[doc.id] = text;
+      return text;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Session init
+    // ---------------------------------------------------------------------------
+    async function initSession() {
+      setStatus('Initializing...', 'warn');
+      document.getElementById('init-btn').disabled = true;
+
+      if (!lm) {
+        setStatus('LanguageModel API not found. Enable #prompt-api-for-gemini-nano in chrome://flags/', 'err');
+        document.getElementById('init-btn').disabled = false;
+        return;
+      }
+
+      try {
+        const available = typeof lm.availability === 'function'
+          ? await lm.availability()
+          : (await lm.capabilities()).available;
+
+        log('availability: ' + available);
+
+        if (available === 'unavailable' || available === 'no') {
+          setStatus('Local AI not available on this device.', 'err');
+          document.getElementById('init-btn').disabled = false;
+          return;
+        }
+
+        session = await lm.create({
+          systemPrompt: SESSION_PROMPT,
+          monitor(m) {
+            m.addEventListener('downloadprogress', (e) => {
+              setProgress(e.loaded, e.total);
+            });
+          }
+        });
+
+        hideProgress();
+        setStatus('Ready — ask a question about nuget-audit.', 'ok');
+        document.getElementById('prompt').disabled = false;
+        document.getElementById('send-btn').disabled = false;
+        document.getElementById('new-btn').disabled = false;
+        document.getElementById('init-area').style.display = 'none';
+        document.getElementById('prompt').focus();
+      } catch (err) {
+        hideProgress();
+        setStatus('Error: ' + err.message, 'err');
+        log('Exception: ' + err.name + ': ' + err.message);
+        console.error(err);
+        document.getElementById('init-btn').disabled = false;
+      }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Send a question
+    // ---------------------------------------------------------------------------
+    async function sendPrompt() {
+      if (!session) return;
+      const input = document.getElementById('prompt');
+      const question = input.value.trim();
+      if (!question) return;
+      input.value = '';
+
+      log('You: ' + question, 'user');
+      document.getElementById('send-btn').disabled = true;
+      document.getElementById('stop-btn').disabled = false;
+      input.disabled = true;
+
+      // Placeholder div that gets filled in as tokens stream in
+      const chat = document.getElementById('chat');
+      const aiDiv = document.createElement('div');
+      aiDiv.className = 'msg ai';
+      aiDiv.textContent = '...';
+      chat.appendChild(aiDiv);
+      chat.scrollTop = chat.scrollHeight;
+
+      const abort = new AbortController();
+      currentAbort = abort;
+
+      try {
+        const doc = pickDoc(question);
+        setDocIndicator('fetching ' + doc.title + '...');
+        const content = await fetchDoc(doc);
+        setDocIndicator(doc.title);
+
+        const contextualPrompt =
+          `Documentation source: "${doc.title}"\n\n` +
+          `--- BEGIN DOCUMENTATION ---\n${content}\n--- END DOCUMENTATION ---\n\n` +
+          `Question: ${question}`;
+
+        const stream = session.promptStreaming(contextualPrompt, { signal: abort.signal });
+        aiDiv.textContent = '';
+        for await (const chunk of stream) {
+          aiDiv.textContent += chunk;
+          chat.scrollTop = chat.scrollHeight;
+        }
+        console.log('Response:', aiDiv.textContent);
+        const used = session.contextUsage ?? 0;
+        const total = session.contextWindow ?? 0;
+        if (total > 0) {
+          const pct = Math.round((used / total) * 100);
+          setDocIndicator(doc.title + `  |  context: ${used}/${total} tokens (${pct}%)`);
+          if (pct > 80) log('Warning: context window over 80% full. Use New Conversation to reset.', 'system');
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          aiDiv.textContent += ' [stopped]';
+          // AbortController cancels the operation but preserves session history
+        } else {
+          aiDiv.textContent = 'Error: ' + err.message;
+          aiDiv.className = 'msg system';
+          console.error(err);
+        }
+      } finally {
+        currentAbort = null;
+        document.getElementById('send-btn').disabled = false;
+        document.getElementById('stop-btn').disabled = true;
+        input.disabled = false;
+        input.focus();
+      }
+    }
+  </script>
+</body>
+</html>
