@@ -4,7 +4,7 @@
 
 The `Authors` field in every NuGet package is free text. Anyone can publish a package
 claiming `Authors = "Microsoft"` — and neither Visual Studio nor the .NET CLI will warn
-you. `nuget-audit` uses nuget.org's **cryptographically backed prefix reservation** signal,
+you. `nuget-audit` uses nuget.org's **prefix reservation and verified-owner** signal,
 not self-reported metadata, to evaluate whether a publisher is who they claim to be.
 
 It is the enforcement layer for the zero-trust NuGet workflow — tying together what five

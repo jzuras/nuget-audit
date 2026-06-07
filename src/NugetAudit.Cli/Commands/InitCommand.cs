@@ -34,7 +34,7 @@ internal static class InitCommand
           <Target Name="AuditIfRestoreChanged" BeforeTargets="Build">
             <PropertyGroup>
               <_SentinelFile>$(MSBuildThisFileDirectory).nuget-audit-ok</_SentinelFile>
-              <_LockFile>$(MSBuildProjectDirectory)packages.lock.json</_LockFile>
+              <_LockFile>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', 'packages.lock.json'))</_LockFile>
               <_AuditPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory).'))</_AuditPath>
             </PropertyGroup>
             <Exec

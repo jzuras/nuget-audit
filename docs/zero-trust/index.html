@@ -422,6 +422,37 @@ following command: dotnet restore --force-evaluate</code></pre>
       without <code>RestoreLockedMode=true</code> set — setup is self-checking.
     </p>
 
+    <div class="callout warning">
+      <strong>Build configuration mismatch is the most common cause of NU1004.</strong>
+      <p>
+        The .NET SDK conditionally injects certain package references at restore time based
+        on build configuration. The most common case: Blazor WASM projects inject
+        <code>Microsoft.DotNet.HotReload.WebAssembly.Browser</code> in Debug builds for
+        hot reload; Release builds do not. If the committed lock file was generated in
+        Debug and CI restores in Release (or vice versa), <code>RestoreLockedMode=true</code>
+        correctly fails with NU1004 — the graphs differ.
+      </p>
+      <p>
+        <strong>Fix:</strong> always generate and commit <code>packages.lock.json</code>
+        using the CLI in the same configuration CI uses — typically Release:
+      </p>
+      <pre style="margin-top:0.25rem;margin-bottom:0.75rem"><code>dotnet restore --force-evaluate --configuration Release</code></pre>
+      <p>
+        A secondary concern is SDK patch version drift: <code>Microsoft.NET.ILLink.Tasks</code>
+        is versioned to the SDK patch, so two machines with different SDK patches can
+        produce different lock files. Pin the SDK version in <code>global.json</code> to
+        prevent this.
+      </p>
+      <p>
+        For demo or tooling projects that do not need strict locking, override per
+        <code>.csproj</code> with a comment explaining why:
+      </p>
+      <pre style="margin-top:0.25rem"><code>&lt;!-- Demo/tooling project: does not need strict locking. --&gt;
+&lt;PropertyGroup&gt;
+  &lt;RestoreLockedMode&gt;false&lt;/RestoreLockedMode&gt;
+&lt;/PropertyGroup&gt;</code></pre>
+    </div>
+
     <h2 id="vs-enforcement">Visual Studio pre-build enforcement</h2>
     <p>
       Without this, VS may trigger a build immediately after restore — closing the window
@@ -524,6 +555,11 @@ nuget-audit audit --check --path .    # fails with exit 1 if any packages need r
           <td>Private-feed packages in preview</td>
           <td>Supported when credentials are available via NuGet.Config or Azure Artifacts Credential Provider; <code>--version</code> required</td>
           <td>Configure NuGet.Config credentials or install the Azure Artifacts Credential Provider</td>
+        </tr>
+        <tr>
+          <td>Lock file generated in wrong build configuration</td>
+          <td>SDK injects different packages in Debug vs. Release (e.g. Blazor WASM hot-reload package in Debug only). A lock file committed from the wrong configuration causes NU1004 on CI.</td>
+          <td>Always generate and commit lock files from the CLI in the same configuration as CI (<code>dotnet restore --force-evaluate --configuration Release</code>). Pin SDK in <code>global.json</code> to prevent patch-version drift.</td>
         </tr>
       </tbody>
     </table>

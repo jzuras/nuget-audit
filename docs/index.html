@@ -148,8 +148,7 @@
     in every NuGet package is free text. Anyone can claim
     <code style="background:rgba(255,255,255,0.1);color:#e2e8f0">Authors = "Microsoft"</code>
     — and neither Visual Studio nor the .NET CLI will warn you.
-    <strong style="color:#e2e8f0">nuget-audit</strong> uses nuget.org's cryptographically
-    backed publisher verification, not self-reported metadata. It is also the enforcement
+    <strong style="color:#e2e8f0">nuget-audit</strong> uses nuget.org's publisher-verification mechanisms (ID prefix reservation and verified owners), not self-reported metadata. It is also the enforcement
     layer for the full zero-trust NuGet workflow — from project setup through CI gate —
     and verifies that every control is in place.
   </p>
@@ -310,8 +309,7 @@ Exit code: 0</code></pre>
   <h2>Trust model</h2>
   <p>
     Each package is evaluated against a layered model. The primary signal is nuget.org
-    <strong>prefix reservation</strong> (<code>verified=true</code>) — a cryptographically
-    backed flag that cannot be self-reported by an attacker, unlike the free-text
+    <strong>prefix reservation</strong> (<code>verified=true</code>) — a namespace and publisher verification signal that cannot be self-reported by an attacker, unlike the free-text
     <code>Authors</code> field. You configure which verified owners you trust and which
     specific package versions you have manually reviewed.
   </p>

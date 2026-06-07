@@ -1,7 +1,9 @@
-# nuget-audit - The single enforcement gate for NuGet supply chain security.
+# nuget-audit
+
+**The single enforcement gate for NuGet supply chain security.**
 
 `nuget-audit` is a .NET global tool that audits every package in your solution against
-nuget.org's cryptographically backed publisher-verification signal — not the free-text
+nuget.org's publisher-verification signal (ID prefix reservation and verified owners) — not the free-text
 `Authors` field that anyone can spoof. It is the CI gate, the VS pre-build check, and
 the pre-restore preview layer for a zero-trust NuGet workflow.
 
