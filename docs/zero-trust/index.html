@@ -542,9 +542,9 @@ nuget-audit audit --check --path .    # fails with exit 1 if any packages need r
           <td>Lock file constrains restore to locked versions; sentinel triggers audit before next build; recently published flag surfaces packages within the detection window</td>
         </tr>
         <tr>
-          <td>Preview accuracy</td>
-          <td>Preview resolves transitives via the NuGet API and may not exactly match what <code>dotnet restore</code> selects</td>
-          <td>Always follow preview with a full audit after restoring to confirm the graph</td>
+          <td>Preview accuracy (<code>--fast</code>)</td>
+          <td><code>--fast</code> resolves transitives via the NuGet API and may not exactly match what <code>dotnet restore</code> selects. Default mode runs an exact restore into a temp dir and has no accuracy gap.</td>
+          <td>Use default mode (omit <code>--fast</code>) for accuracy; always follow with a full audit after restoring to confirm the graph</td>
         </tr>
         <tr>
           <td>Preview or nightly SDK</td>
