@@ -196,10 +196,8 @@ public class PreviewService : IPreviewService
 
             // Transitive deps resolved by BFS always come from nuget.org — pass feedInfo: null
             // so their trust metadata is fetched from nuget.org, not the private feed.
-            // Only the root package itself lives on the private feed; it is in the changed list,
-            // not in added, so passing null here is correct for both lists.
             var addedInfos = await this.FetchTrustMetadataForNewPackagesAsync(
-                added, feedInfo: null, trustConfig, ct);
+                added, feedInfo: null, trustConfig, opts.PackageId, ct);
 
             var changedInfos = await this.FetchTrustMetadataForChangedPackagesAsync(
                 changed, feedInfo: null, trustConfig, ct);
@@ -305,7 +303,7 @@ public class PreviewService : IPreviewService
         }
 
         var pubAddedInfos = await this.FetchTrustMetadataForNewPackagesAsync(
-            pubAdded, feedInfo: null, trustConfig, ct);
+            pubAdded, feedInfo: null, trustConfig, opts.PackageId, ct);
 
         var pubChangedInfos = await this.FetchTrustMetadataForChangedPackagesAsync(
             pubChanged, feedInfo: null, trustConfig, ct);
@@ -1144,24 +1142,35 @@ public class PreviewService : IPreviewService
     /// <param name="added">Packages added to the dependency graph.</param>
     /// <param name="feedInfo">Private feed info for packages on a private feed; null for public.</param>
     /// <param name="trustConfig">The loaded trust configuration.</param>
+    /// <param name="rootPackageId">
+    /// The package ID the user targeted with <c>preview-update</c>. When the target package is
+    /// brand new (not already in the project), it lands in <paramref name="added"/> alongside its
+    /// real transitive dependencies — this ID is used to label that one entry <see cref="DependencyType.Direct"/>
+    /// instead of <see cref="DependencyType.Transitive"/>.
+    /// </param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>List of evaluated package info records in the same order as <paramref name="added"/>.</returns>
     private async Task<List<PackageInfo>> FetchTrustMetadataForNewPackagesAsync(
         List<PackageEntry> added,
         FeedInfo? feedInfo,
         TrustConfig trustConfig,
+        string rootPackageId,
         CancellationToken ct)
     {
         var result = new List<PackageInfo>(added.Count);
 
         foreach (var entry in added)
         {
+            var depType = string.Equals(entry.Id, rootPackageId, StringComparison.OrdinalIgnoreCase)
+                ? DependencyType.Direct
+                : DependencyType.Transitive;
+
             var info = await PackageInfoBuilder.BuildAsync(
                 entry.Id,
                 entry.Version,
                 feedInfo,
                 trustConfig,
-                DependencyType.Transitive,
+                depType,
                 cachePath: null,
                 this.RegistrationClient,
                 this.SearchClient,

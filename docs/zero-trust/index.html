@@ -233,12 +233,22 @@ nuget-audit audit --path .
 #    &lt;/Project&gt;
 #    RestorePackagesWithLockFile generates packages.lock.json for every project.
 #    RestoreLockedMode enforces it — restore fails if the graph would change.
-dotnet restore --force-evaluate
+dotnet restore --force-evaluate --configuration Release
+#    Use --configuration Release (or whichever config CI uses). The SDK injects
+#    different packages in Debug vs. Release for some project types (e.g. Blazor WASM
+#    hot-reload), so the committed lock file must match the CI restore configuration.
 
-# 5. Add .nuget-audit-ok to .gitignore (machine-local sentinel created by Directory.Build.targets)
+# 5. Pin the SDK version — add global.json to the repo root:
+#    { "sdk": { "version": "10.0.xxx", "rollForward": "disable" } }
+#    Without this, two developers on different SDK patches can produce different lock
+#    files (the SDK injects implicit packages such as Microsoft.NET.ILLink.Tasks at a
+#    version tied to the SDK patch). nuget-audit does not check for global.json —
+#    this is a team practice recommendation, not something the tool enforces.
 
-# 6. Commit everything
-git add packages.lock.json Directory.Build.props Directory.Build.targets .gitignore TrustConfig.json
+# 6. Add .nuget-audit-ok to .gitignore (machine-local sentinel created by Directory.Build.targets)
+
+# 7. Commit everything
+git add packages.lock.json Directory.Build.props Directory.Build.targets .gitignore TrustConfig.json global.json
 git commit -m "Lock NuGet graph and add audit enforcement"</code></pre>
 
     <h3>Third-party installed templates</h3>
@@ -438,10 +448,10 @@ following command: dotnet restore --force-evaluate</code></pre>
       </p>
       <pre style="margin-top:0.25rem;margin-bottom:0.75rem"><code>dotnet restore --force-evaluate --configuration Release</code></pre>
       <p>
-        A secondary concern is SDK patch version drift: <code>Microsoft.NET.ILLink.Tasks</code>
-        is versioned to the SDK patch, so two machines with different SDK patches can
-        produce different lock files. Pin the SDK version in <code>global.json</code> to
-        prevent this.
+        A secondary concern is SDK patch version drift: implicit SDK packages such as
+        <code>Microsoft.NET.ILLink.Tasks</code> are versioned to the SDK patch, so two
+        machines on different patches can produce different lock files. See
+        <a href="#breaks-down">Where this breaks down</a> for mitigations.
       </p>
       <p>
         For demo or tooling projects that do not need strict locking, override per
@@ -559,7 +569,17 @@ nuget-audit audit --check --path .    # fails with exit 1 if any packages need r
         <tr>
           <td>Lock file generated in wrong build configuration</td>
           <td>SDK injects different packages in Debug vs. Release (e.g. Blazor WASM hot-reload package in Debug only). A lock file committed from the wrong configuration causes NU1004 on CI.</td>
-          <td>Always generate and commit lock files from the CLI in the same configuration as CI (<code>dotnet restore --force-evaluate --configuration Release</code>). Pin SDK in <code>global.json</code> to prevent patch-version drift.</td>
+          <td>Always generate and commit lock files from the CLI in the same configuration as CI (<code>dotnet restore --force-evaluate --configuration Release</code>).</td>
+        </tr>
+        <tr>
+          <td>SDK patch version drift</td>
+          <td>Implicit SDK packages such as <code>Microsoft.NET.ILLink.Tasks</code> are versioned to the SDK patch. Two developers — or a developer and CI — on different SDK patches produce different lock files, causing NU1004 failures across machines. <strong>nuget-audit does not check for this.</strong></td>
+          <td>Add <code>global.json</code> to the repo root pinning the exact SDK version (<code>"rollForward": "disable"</code>). This is a team practice recommendation; the tool does not verify it.</td>
+        </tr>
+        <tr>
+          <td>Blazor Web App: cross-platform CI (Windows vs. Linux)</td>
+          <td>On Blazor Web App projects, <code>contentHash</code> values for certain implicitly-injected SDK packages differ between Windows and Linux restore environments. A lock file generated on Windows fails with NU1004 when CI restores on Linux, and vice versa. <strong>nuget-audit does not handle this.</strong></td>
+          <td>Use a consistent OS for both local lock file generation and CI restore. This is an open upstream issue; track progress at the NuGet and dotnet/sdk repositories.</td>
         </tr>
       </tbody>
     </table>

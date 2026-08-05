@@ -9,7 +9,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>nuget-audit</ToolCommandName>
     <PackageId>nuget-audit</PackageId>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
     <Authors>Jim Zuras</Authors>
     <Copyright>Copyright (c) James Zuras 2026</Copyright>
     <Description>Audits NuGet package trust by verifying nuget.org prefix reservation and surfacing publisher trust signals: newly published versions, deprecations, vulnerabilities, and executable content. A single CI gate for zero-trust dependency management.</Description>
@@ -18,7 +18,7 @@
     <RepositoryUrl>https://github.com/jzuras/nuget-audit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>nuget security audit trust vulnerability</PackageTags>
-    <PackageReleaseNotes>Fix: Pre-build audit target now correctly detects when the lock file has changed.</PackageReleaseNotes>
+    <PackageReleaseNotes>Fix: Mis-labeled package being added in preview-update command.</PackageReleaseNotes>
     <PackageIcon>icon.png</PackageIcon>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
